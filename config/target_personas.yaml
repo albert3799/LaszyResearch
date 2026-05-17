@@ -1,0 +1,31 @@
+# Target Personas — LinkedIn titles to search for at each account.
+# Ordered by priority (most relevant first).
+
+primary_titles:
+  - "Chief Procurement Officer"
+  - "VP Procurement"
+  - "Director of Procurement"
+  - "Head of Procurement"
+  - "VP Strategic Sourcing"
+  - "Director of Strategic Sourcing"
+
+secondary_titles:
+  - "VP Finance Operations"
+  - "Director of Finance Operations"
+  - "Chief Financial Officer"
+  - "VP Accounts Payable"
+  - "Director of Accounts Payable"
+  - "Head of Spend Management"
+
+tertiary_titles:
+  - "VP Operations"
+  - "Director of Operations"
+  - "Controller"
+  - "VP FP&A"
+  - "Chief Operations Officer"
+
+# How many profiles to scrape per account
+max_profiles_per_account: 3
+
+# Minimum tenure to consider (filters out very new hires who may not have buying power)
+min_tenure_months: 3

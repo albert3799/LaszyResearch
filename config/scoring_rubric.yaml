@@ -1,0 +1,28 @@
+# Scoring Rubric Configuration
+# Adjust these weights to fine-tune how accounts are scored.
+
+weights:
+  business_priority_alignment: 0.35   # Are they focused on problems Zip solves?
+  buying_signals: 0.35                # Hiring, exec changes, tech gaps
+  accessibility: 0.30                 # Can we identify and reach stakeholders?
+
+# Score thresholds for categorization
+thresholds:
+  hot: 8          # Score >= 8: prioritize immediately
+  warm: 6         # Score 6-7: worth pursuing
+  cool: 4         # Score 4-5: monitor / nurture
+  cold: 1         # Score 1-3: deprioritize
+
+# Strong buying signals (boost score)
+strong_signals:
+  - "hiring VP/Director Procurement"
+  - "new CFO or CPO (< 1 year tenure)"
+  - "earnings call mentions 'procurement transformation'"
+  - "no current spend management tooling detected"
+  - "active RFP for procurement software"
+
+# Negative signals (cap or reduce score)
+negative_signals:
+  - "recently implemented Coupa, SAP Ariba, or Jaggaer (< 2 years)"
+  - "company in financial distress / layoffs"
+  - "< 500 employees (too small for enterprise procurement)"

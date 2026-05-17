@@ -2,28 +2,25 @@
 
 Pulls open job listings for a company domain.
 Requires THEIRSTACK_API_KEY environment variable.
+
+The plain `_search_theirstack_impl` async function holds the actual logic
+(directly testable); `search_theirstack` is the @function_tool-wrapped
+version that gets handed to the hiring agent.
 """
 
 from __future__ import annotations
 
-import json
 import os
 from typing import Any
 
 import httpx
-from claude_agent_sdk import tool
+from agents import function_tool
 
 
-@tool(
-    "search_theirstack",
-    "Pull open job listings for a company from TheirStack. Returns open roles with titles, departments, and posting dates.",
-    {"company_domain": str},
-)
-async def search_theirstack(args: dict[str, Any]) -> dict[str, Any]:
-    company_domain = args["company_domain"]
+async def _search_theirstack_impl(company_domain: str) -> dict[str, Any]:
     api_key = os.environ.get("THEIRSTACK_API_KEY")
     if not api_key:
-        return _content({"error": "THEIRSTACK_API_KEY not set in environment variables"})
+        return {"error": "THEIRSTACK_API_KEY not set in environment variables"}
 
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
@@ -33,11 +30,18 @@ async def search_theirstack(args: dict[str, Any]) -> dict[str, Any]:
                 headers={"Authorization": f"Bearer {api_key}"},
             )
             resp.raise_for_status()
-            return _content(resp.json())
-
+            return resp.json()
     except httpx.HTTPError as e:
-        return _content({"error": f"TheirStack request failed: {e}"})
+        return {"error": f"TheirStack request failed: {e}"}
 
 
-def _content(payload: dict[str, Any]) -> dict[str, Any]:
-    return {"content": [{"type": "text", "text": json.dumps(payload)}]}
+@function_tool
+async def search_theirstack(company_domain: str) -> dict[str, Any]:
+    """Pull open job listings for a company from TheirStack.
+
+    Returns open roles with titles, departments, and posting dates.
+
+    Args:
+        company_domain: The company's domain (e.g., "acmecorp.com").
+    """
+    return await _search_theirstack_impl(company_domain)

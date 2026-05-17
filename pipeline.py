@@ -11,7 +11,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-load_dotenv()  # populate os.environ from .env before agents/tools import
+load_dotenv()  # populate os.environ from .env before researchers/tools import
 
 from orchestrator import process_account  # noqa: E402
 

@@ -3,18 +3,18 @@
 Writes scored account research to the account_research table.
 Requires SUPABASE_URL and SUPABASE_SERVICE_KEY environment variables.
 
-The supabase-py v2 client is synchronous; we offload its blocking calls to a
-worker thread so the tool stays async-friendly.
+`account_data` is dynamic in shape, so the function_tool is registered
+with strict_mode=False (the OpenAI Agents SDK otherwise refuses a JSON
+schema with `additionalProperties: true`).
 """
 
 from __future__ import annotations
 
 import asyncio
-import json
 import os
 from typing import Any
 
-from claude_agent_sdk import tool
+from agents import function_tool
 from supabase import Client, create_client
 
 _client: Client | None = None
@@ -31,25 +31,26 @@ def _get_client() -> Client:
     return _client
 
 
-@tool(
-    "persist_to_db",
-    "Write a scored account-research record to the Supabase `account_research` table. Upserts on account_id so re-runs update rather than duplicate.",
-    {"account_data": dict},
-)
-async def persist_to_db(args: dict[str, Any]) -> dict[str, Any]:
-    account_data = args["account_data"]
-    if isinstance(account_data, str):
-        # Some models pass the payload as a JSON string; accept both.
-        try:
-            account_data = json.loads(account_data)
-        except json.JSONDecodeError:
-            return _content({"status": "error", "message": "account_data was a string but not valid JSON"})
-
+async def _persist_to_db_impl(account_data: dict[str, Any]) -> dict[str, Any]:
     try:
-        result = await asyncio.to_thread(_upsert, account_data)
-        return _content(result)
+        return await asyncio.to_thread(_upsert, account_data)
     except Exception as e:
-        return _content({"status": "error", "message": str(e)})
+        return {"status": "error", "message": str(e)}
+
+
+@function_tool(strict_mode=False)
+async def persist_to_db(account_data: dict[str, Any]) -> dict[str, Any]:
+    """Write a scored account-research record to Supabase.
+
+    Upserts on account_id so re-running the pipeline updates the row
+    rather than inserting a duplicate.
+
+    Args:
+        account_data: Dict with the keys: account_id (or id/domain), company,
+            domain, score, confidence, rationale, key_evidence,
+            recommended_persona, message_angle, raw_research.
+    """
+    return await _persist_to_db_impl(account_data)
 
 
 def _upsert(account_data: dict[str, Any]) -> dict[str, Any]:
@@ -71,7 +72,3 @@ def _upsert(account_data: dict[str, Any]) -> dict[str, Any]:
     if response.data:
         return {"status": "persisted", "id": response.data[0].get("id")}
     return {"status": "error", "message": "No data returned from upsert"}
-
-
-def _content(payload: dict[str, Any]) -> dict[str, Any]:
-    return {"content": [{"type": "text", "text": json.dumps(payload)}]}

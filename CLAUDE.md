@@ -10,26 +10,26 @@ A multi-agent research pipeline for Zip HQ's BDR team. Takes a list of target ac
 5. Scores the account on "Zip-fit" (1-10)
 6. Persists everything to Supabase
 
-Built on the Claude Agent SDK (Python). Each agent has one tool and one job.
+Built in TypeScript on the OpenAI JavaScript/TypeScript SDK and Responses API. Each agent has one tool and one job.
 
 ## Architecture
 
-- **6 agents + 1 orchestrator** — defined in `agents/`
-- **4 custom tools** — defined in `tools/`
-- **Orchestrator** (`orchestrator.py`) — processes one account at a time, runs agents 1-4 in parallel via `asyncio.gather`, then scoring, then persist
-- **Database** — Supabase (Postgres). Schema in the architecture plan doc.
+- **6 agents + 1 orchestrator** — defined in `src/agents/`
+- **4 custom tools** — defined in `src/tools/`
+- **Orchestrator** (`src/orchestrator.ts`) — processes one account at a time, runs agents 1-4 in parallel via `Promise.all`, then scoring, then persist
+- **Database** — Supabase (Postgres). Schema in `supabase/schema.sql`.
 - **Frontend** — separate app (Replit/Lovable), reads from Supabase. NOT in this repo.
 
 ## Agent → Model Mapping
 
 | Agent | Model | Why |
 |-------|-------|-----|
-| web_research | claude-sonnet-4-6 | Needs smart search synthesis |
-| linkedin | claude-haiku-4-5 | Structured extraction |
-| hiring | claude-haiku-4-5 | Pattern matching |
-| financials | claude-sonnet-4-6 | Long document analysis |
-| scoring | claude-sonnet-4-6 | Multi-signal reasoning |
-| output | claude-haiku-4-5 | DB write, logic already done |
+| web_research | `OPENAI_STRONG_MODEL` (`gpt-5.5`) | Needs smart search synthesis |
+| linkedin | `OPENAI_FAST_MODEL` (`gpt-5.4-mini`) | Structured extraction |
+| hiring | `OPENAI_FAST_MODEL` (`gpt-5.4-mini`) | Pattern matching |
+| financials | `OPENAI_STRONG_MODEL` (`gpt-5.5`) | Long document analysis |
+| scoring | `OPENAI_STRONG_MODEL` (`gpt-5.5`) | Multi-signal reasoning |
+| output | `OPENAI_FAST_MODEL` (`gpt-5.4-mini`) | DB write, logic already done |
 
 ## Context Engineering Rules
 
@@ -41,10 +41,14 @@ Built on the Claude Agent SDK (Python). Each agent has one tool and one job.
 
 ## Key Files
 
-- `pipeline.py` — entry point, run with `python pipeline.py`
-- `orchestrator.py` — coordinates agents for each account
-- `agents/*.py` — one file per agent, each with model + system prompt + tools
-- `tools/*.py` — one file per external API integration
+- `src/pipeline.ts` — entry point, run with `npm run pipeline`
+- `src/orchestrator.ts` — coordinates agents for each account
+- `src/agents/*.ts` — one file per agent, each with model + system prompt + tools
+- `src/agents/openaiAgent.ts` — shared Responses API agent loop
+- `src/tools/*.ts` — one file per external API integration
+- `src/tools/openaiTools.ts` — helper for local OpenAI function tools
+- `tests/*.test.ts` — Vitest tests
+- `supabase/schema.sql` — Postgres schema for the `account_research` table
 - `config/scoring_rubric.yaml` — editable scoring weights
 - `config/target_personas.yaml` — LinkedIn titles to search for
 - `accounts.json` — input account list
@@ -52,7 +56,8 @@ Built on the Claude Agent SDK (Python). Each agent has one tool and one job.
 ## Environment Variables
 
 Copy `.env.example` to `.env` and fill in:
-- `ANTHROPIC_API_KEY` — Claude API
+- `OPENAI_API_KEY` — OpenAI API
+- `OPENAI_STRONG_MODEL` / `OPENAI_FAST_MODEL` — optional model overrides
 - `APIFY_TOKEN` — LinkedIn scraping
 - `THEIRSTACK_API_KEY` — hiring signals
 - `SUPABASE_URL` + `SUPABASE_SERVICE_KEY` — database
@@ -60,16 +65,17 @@ Copy `.env.example` to `.env` and fill in:
 ## Running
 
 ```bash
-pip install -r requirements.txt
+npm install
 cp .env.example .env  # fill in keys
-python pipeline.py
+npm run pipeline
 ```
 
 ## Important Notes for Claude Code
 
-- The `claude_agent_sdk` package may need to be installed as `claude-agent-sdk` — check PyPI for the exact package name when it's available
-- The SDK's `@tool` decorator, `Agent` class, and `.run()` method are the core primitives
-- If the SDK API surface differs from what's coded here, adapt the agent definitions to match the actual SDK — the system prompts and tool logic are the important parts
+- The OpenAI SDK entry point is `new OpenAI().responses.create(...)`
+- Use hosted `web_search` via the Responses API for web research agents
+- Use `src/tools/openaiTools.ts` for local function tools
+- The project-level `src/agents/openaiAgent.ts` wrapper preserves the desired `.run()` interface for each agent definition
 - Each tool function should handle errors gracefully and return error dicts rather than raising exceptions
 - The SEC EDGAR API requires a descriptive User-Agent header — don't remove it
 - Supabase uses upsert on `account_id` so re-running the same account updates rather than duplicates

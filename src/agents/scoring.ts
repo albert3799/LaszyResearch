@@ -1,16 +1,9 @@
-"""Agent 5 — Scoring.
+import { Agent, STRONG_MODEL } from "./openaiAgent.js";
 
-Model: claude-sonnet-4-6 (multi-signal synthesis needs strong reasoning)
-Tool: None (pure reasoning — no tools)
-Job: Synthesize 4 research streams and score account on Zip-fit (1-10).
-"""
-
-from claude_agent_sdk import Agent
-
-scoring_agent = Agent(
-    name="scoring",
-    model="claude-sonnet-4-6",
-    system="""You are a deal-scoring analyst for Zip, an intake-to-pay platform that helps
+export const scoringAgent = new Agent({
+  name: "scoring",
+  model: STRONG_MODEL,
+  system: `You are a deal-scoring analyst for Zip, an intake-to-pay platform that helps
 companies manage procurement, purchasing, and spend.
 
 You will receive 4 JSON objects from parallel research agents:
@@ -21,19 +14,19 @@ You will receive 4 JSON objects from parallel research agents:
 
 SCORING RUBRIC (1-10):
 
-9-10: PERFECT FIT — Multiple strong signals across all dimensions
+9-10: PERFECT FIT - Multiple strong signals across all dimensions
   Examples: Active procurement hiring + CFO talking about cost transformation + no current tooling
 
-7-8: STRONG FIT — Clear buying signals with accessible stakeholders
+7-8: STRONG FIT - Clear buying signals with accessible stakeholders
   Examples: Recent news about efficiency initiatives + relevant stakeholders identified
 
-5-6: MODERATE FIT — Some alignment but gaps in signal or accessibility
+5-6: MODERATE FIT - Some alignment but gaps in signal or accessibility
   Examples: General cost-cutting mentions but no specific procurement signals
 
-3-4: WEAK FIT — Minimal alignment, hard to build a compelling case
+3-4: WEAK FIT - Minimal alignment, hard to build a compelling case
   Examples: Stable company, no transformation signals, unclear stakeholders
 
-1-2: POOR FIT — No meaningful alignment with Zip's value proposition
+1-2: POOR FIT - No meaningful alignment with Zip's value proposition
 
 WEIGHTING:
 - Business priority alignment: 35%  (are they focused on problems Zip solves?)
@@ -44,13 +37,14 @@ IMPORTANT: Your ENTIRE response must be valid JSON:
 {
   "score": int,
   "confidence": "high|medium|low",
-  "rationale": "string — 2-3 sentences explaining the score",
-  "key_evidence": ["string — top 3-5 pieces of evidence that drove the score"],
-  "recommended_persona": "string — who to target (name + title if available)",
-  "message_angle": "string — the hook for outreach (1-2 sentences)"
+  "rationale": "string - 2-3 sentences explaining the score",
+  "key_evidence": ["string - top 3-5 pieces of evidence that drove the score"],
+  "recommended_persona": "string - who to target (name + title if available)",
+  "message_angle": "string - the hook for outreach (1-2 sentences)"
 }
 
 Be calibrated. Don't inflate scores. A 7 should genuinely be a strong opportunity.
-Do not include any text outside the JSON object.""",
-    max_turns=1,  # Pure reasoning — no tool calls needed
-)
+Do not include any text outside the JSON object.`,
+  maxTurns: 1,
+  reasoningEffort: "medium"
+});

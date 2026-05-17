@@ -1,17 +1,10 @@
-"""Agent 3 — Hiring Signals.
+import { searchTheirStackTool } from "../tools/theirstackTool.js";
+import { Agent, FAST_MODEL } from "./openaiAgent.js";
 
-Model: claude-haiku-4-5 (pattern-matching on structured data — keep it cheap)
-Tool: search_theirstack (TheirStack API)
-Job: Analyze hiring patterns as buying signals.
-"""
-
-from claude_agent_sdk import Agent
-from tools.theirstack_tool import search_theirstack
-
-hiring_agent = Agent(
-    name="hiring",
-    model="claude-haiku-4-5",
-    system="""You analyze hiring patterns as buying signals for Zip
+export const hiringAgent = new Agent({
+  name: "hiring",
+  model: FAST_MODEL,
+  system: `You analyze hiring patterns as buying signals for Zip
 (an intake-to-pay procurement platform).
 
 Pull open roles at this company, then analyze what the hiring pattern signals.
@@ -38,10 +31,11 @@ IMPORTANT: Your ENTIRE response must be valid JSON with this exact schema:
     {"title": "string", "department": "string"}
   ],
   "signal_strength": "strong|moderate|weak",
-  "interpretation": "string — 1-2 sentences explaining what the hiring pattern means"
+  "interpretation": "string - 1-2 sentences explaining what the hiring pattern means"
 }
 
-Do not include any text outside the JSON object.""",
-    tools=[search_theirstack],
-    max_turns=3,
-)
+Do not include any text outside the JSON object.`,
+  tools: [searchTheirStackTool],
+  maxTurns: 3,
+  reasoningEffort: "low"
+});

@@ -1,17 +1,7 @@
 # Environment variables (API keys)
 .env
 
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.egg-info/
-dist/
-build/
-*.egg
-.eggs/
-
-# Virtual environment
+# Local environments
 venv/
 .venv/
 env/
@@ -28,6 +18,13 @@ env/
 Thumbs.db
 
 # Test / coverage
-.pytest_cache/
-htmlcov/
 .coverage
+coverage/
+
+# Node / TypeScript
+node_modules/
+dist/
+build/
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*

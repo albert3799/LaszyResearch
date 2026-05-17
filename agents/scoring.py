@@ -1,16 +1,20 @@
 """Agent 5 — Scoring.
 
 Model: claude-sonnet-4-6 (multi-signal synthesis needs strong reasoning)
-Tool: None (pure reasoning — no tools)
+Tools: None (pure reasoning)
 Job: Synthesize 4 research streams and score account on Zip-fit (1-10).
 """
 
-from claude_agent_sdk import Agent
+from __future__ import annotations
 
-scoring_agent = Agent(
-    name="scoring",
-    model="claude-sonnet-4-6",
-    system="""You are a deal-scoring analyst for Zip, an intake-to-pay platform that helps
+import json
+from typing import Any
+
+from claude_agent_sdk import ClaudeAgentOptions
+
+from agents._runner import run_agent
+
+SYSTEM_PROMPT = """You are a deal-scoring analyst for Zip, an intake-to-pay platform that helps
 companies manage procurement, purchasing, and spend.
 
 You will receive 4 JSON objects from parallel research agents:
@@ -51,6 +55,16 @@ IMPORTANT: Your ENTIRE response must be valid JSON:
 }
 
 Be calibrated. Don't inflate scores. A 7 should genuinely be a strong opportunity.
-Do not include any text outside the JSON object.""",
-    max_turns=1,  # Pure reasoning — no tool calls needed
-)
+Do not include any text outside the JSON object."""
+
+
+async def run_scoring(research_bundle: dict[str, Any]) -> dict[str, Any]:
+    options = ClaudeAgentOptions(
+        model="claude-sonnet-4-6",
+        system_prompt=SYSTEM_PROMPT,
+        allowed_tools=[],
+        max_turns=1,
+        permission_mode="bypassPermissions",
+    )
+    prompt = f"Score this account:\n{json.dumps(research_bundle, indent=2)}"
+    return await run_agent(prompt, options, agent_name="scoring")

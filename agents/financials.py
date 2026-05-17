@@ -2,20 +2,22 @@
 
 Model: claude-sonnet-4-6 (long documents require competent extraction + summarization)
 Tool: fetch_sec_filings (SEC EDGAR API)
-Job: Analyze 10-K filings and earnings transcripts for procurement/spend signals.
+Job: Analyze 10-K filings for procurement/spend signals.
 """
 
-from claude_agent_sdk import Agent
+from __future__ import annotations
+
+from typing import Any
+
+from claude_agent_sdk import ClaudeAgentOptions, create_sdk_mcp_server
+
+from agents._runner import run_agent
 from tools.sec_filings_tool import fetch_sec_filings
 
-financials_agent = Agent(
-    name="financials",
-    model="claude-sonnet-4-6",
-    system="""You are a financial analyst specializing in identifying procurement
+SYSTEM_PROMPT = """You are a financial analyst specializing in identifying procurement
 and spend management signals in corporate filings.
 
-Fetch the company's most recent annual report (10-K) and latest earnings call
-transcript. Analyze for:
+Call fetch_sec_filings for the target company. Analyze the returned 10-K text for:
 
 1. STATED PRIORITIES — What does leadership say they're focused on?
    Look for: cost reduction, efficiency, operational excellence, digital transformation
@@ -48,7 +50,23 @@ Your ENTIRE response must be valid JSON with this exact schema:
 
 If the company is private or filings aren't available, return empty arrays
 and note "private company — no public filings" in source_documents.
-Do not include any text outside the JSON object.""",
+Do not include any text outside the JSON object."""
+
+_server = create_sdk_mcp_server(
+    name="sec",
+    version="1.0.0",
     tools=[fetch_sec_filings],
-    max_turns=5,
 )
+
+
+async def run_financials(account: dict[str, Any]) -> dict[str, Any]:
+    options = ClaudeAgentOptions(
+        model="claude-sonnet-4-6",
+        system_prompt=SYSTEM_PROMPT,
+        mcp_servers={"sec": _server},
+        allowed_tools=["mcp__sec__fetch_sec_filings"],
+        max_turns=5,
+        permission_mode="bypassPermissions",
+    )
+    prompt = f"Analyze filings: {account['name']} (ticker: {account.get('ticker', 'unknown')})"
+    return await run_agent(prompt, options, agent_name="financials")

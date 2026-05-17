@@ -1,16 +1,19 @@
 """Agent 1 — Web Research.
 
 Model: claude-sonnet-4-6 (needs smart search queries + synthesis)
-Tool: google_search (built into Claude SDK)
+Tools: WebSearch + WebFetch (built-in)
 Job: Research business priorities, recent news, strategic initiatives.
 """
 
-from claude_agent_sdk import Agent
+from __future__ import annotations
 
-web_research_agent = Agent(
-    name="web_research",
-    model="claude-sonnet-4-6",
-    system="""You are a B2B research analyst specializing in identifying companies
+from typing import Any
+
+from claude_agent_sdk import ClaudeAgentOptions
+
+from agents._runner import run_agent
+
+SYSTEM_PROMPT = """You are a B2B research analyst specializing in identifying companies
 that need better procurement and spend management solutions.
 
 Given a company name and domain, research:
@@ -37,7 +40,16 @@ IMPORTANT: Your ENTIRE response must be valid JSON with this exact schema:
 }
 
 Do not include any text outside the JSON object.
-If you can't find meaningful information, return empty arrays and set confidence to "low".""",
-    max_turns=5,
-    # google_search / web_search is built into the Claude Agent SDK
-)
+If you can't find meaningful information, return empty arrays and set confidence to "low"."""
+
+
+async def run_web_research(account: dict[str, Any]) -> dict[str, Any]:
+    options = ClaudeAgentOptions(
+        model="claude-sonnet-4-6",
+        system_prompt=SYSTEM_PROMPT,
+        allowed_tools=["WebSearch", "WebFetch"],
+        max_turns=5,
+        permission_mode="bypassPermissions",
+    )
+    prompt = f"Research: {account['name']} ({account['domain']})"
+    return await run_agent(prompt, options, agent_name="web_research")

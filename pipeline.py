@@ -8,7 +8,12 @@ import asyncio
 import json
 import sys
 from pathlib import Path
-from orchestrator import process_account
+
+from dotenv import load_dotenv
+
+load_dotenv()  # populate os.environ from .env before agents/tools import
+
+from orchestrator import process_account  # noqa: E402
 
 
 async def main():
@@ -34,7 +39,12 @@ async def main():
         print(f"[{i+1}/{len(accounts)}] Processing: {account['name']} ({account['domain']})")
         try:
             result = await process_account(account)
-            print(f"  → Score: {result['score']}/10 ({result['confidence']})")
+            score = result.get("score")
+            if score is None:
+                print(f"  → Scoring agent returned no score: {result.get('error', 'unknown')}")
+                failures.append({"account": account["name"], "error": "no score returned"})
+                continue
+            print(f"  → Score: {score}/10 ({result.get('confidence', 'unknown')})")
             results.append(result)
         except Exception as e:
             print(f"  → FAILED: {e}")
@@ -45,12 +55,14 @@ async def main():
     print(f"\n{'='*60}")
     print(f"  COMPLETE: {len(results)} scored, {len(failures)} failed")
     if results:
-        avg_score = sum(r["score"] for r in results) / len(results)
-        print(f"  Average score: {avg_score:.1f}/10")
-        top = sorted(results, key=lambda r: r["score"], reverse=True)[:5]
-        print(f"  Top accounts:")
-        for r in top:
-            print(f"    • {r['company']} — {r['score']}/10")
+        scored = [r for r in results if isinstance(r.get("score"), (int, float))]
+        if scored:
+            avg_score = sum(r["score"] for r in scored) / len(scored)
+            print(f"  Average score: {avg_score:.1f}/10")
+            top = sorted(scored, key=lambda r: r["score"], reverse=True)[:5]
+            print(f"  Top accounts:")
+            for r in top:
+                print(f"    • {r['company']} — {r['score']}/10")
     print(f"{'='*60}\n")
 
 

@@ -4,7 +4,9 @@ export interface Account {
   id?: string;
   name: string;
   domain: string;
+  linkedinUrl?: string;
   ticker?: string;
+  companyNumber?: string;
 }
 
 export interface ScoreData {

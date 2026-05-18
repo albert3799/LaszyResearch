@@ -16,7 +16,7 @@ npm run pipeline
 
 For each account in `accounts.json`, the pipeline:
 
-1. Runs 4 research agents **in parallel** (web, LinkedIn, hiring, financials)
+1. Runs the V1 research agents **in parallel** (web research + hiring)
 2. Feeds structured findings to a **scoring agent** (rates 1-10 on Zip-fit)
 3. **Persists** the scored output to Supabase
 
@@ -42,6 +42,8 @@ LaszyResearch/
 | Key | Service | Get it from |
 |-----|---------|-------------|
 | `OPENAI_API_KEY` | OpenAI API | [platform.openai.com](https://platform.openai.com) |
+| `SERPER_API_KEY` | Report PDF search | [serper.dev](https://serper.dev) |
+| `COMPANIES_HOUSE_API_KEY` | UK filings fallback | [developer.company-information.service.gov.uk](https://developer.company-information.service.gov.uk) |
 | `APIFY_TOKEN` | LinkedIn scraping | [apify.com](https://apify.com) |
 | `THEIRSTACK_API_KEY` | Hiring signals | [theirstack.com](https://theirstack.com) |
 | `SUPABASE_URL` | Database | [supabase.com](https://supabase.com) |
@@ -50,14 +52,33 @@ LaszyResearch/
 Optional model overrides:
 - `OPENAI_STRONG_MODEL` defaults to `gpt-5.5`
 - `OPENAI_FAST_MODEL` defaults to `gpt-5.4-mini`
+- `REPORT_FINDER_MODEL` defaults to `gpt-5.4-nano`
+- `REPORT_ANALYST_MODEL` defaults to `gpt-5.4`
+
+## Financial Report Intelligence
+
+The `financialsAgent` is a two-step facade:
+
+1. `reportFinderAgent` searches Serper for annual/interim/quarterly report PDFs, samples candidate PDFs, verifies the document, downloads it, and extracts text.
+2. `reportAnalystAgent` reads the extracted report text and returns structured Zip-relevant signals.
+
+The facade maps this report intelligence back into the existing `financial_intelligence` shape consumed by the scoring agent.
 
 ## Scripts
 
 ```bash
 npm run pipeline    # process accounts.json
+npm run agent:web -- "Tesco" tescoplc.com
+npm run agent:hiring -- <account_uuid> "Tesco" tescoplc.com "https://www.linkedin.com/company/tesco/"
 npm run typecheck   # TypeScript check
 npm test            # Vitest suite
 ```
+
+## V1 Scope
+
+V1 runs only the web research and hiring agents before scoring. The research
+bundle still includes `linkedin_profiles` and `financial_intelligence`, but they
+are explicit empty placeholders until those agents are enabled again.
 
 ## Database
 

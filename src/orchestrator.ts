@@ -1,12 +1,26 @@
 import "dotenv/config";
 
-import { financialsAgent } from "./agents/financials.js";
-import { hiringAgent } from "./agents/hiring.js";
-import { linkedinAgent } from "./agents/linkedin.js";
+import { parseHiringAnalysis, runHiringForAccount } from "./agents/hiring.js";
 import { outputAgent } from "./agents/output.js";
 import { scoringAgent } from "./agents/scoring.js";
-import { webResearchAgent } from "./agents/webResearch.js";
+import { parseWebResearch, runWebResearchForAccount } from "./agents/webResearch.js";
 import type { Account, JsonObject, ScoredAccount, ScoreData } from "./types.js";
+
+const EMPTY_LINKEDIN_PROFILES = {
+  stakeholders: [],
+  status: "not_enabled_v1"
+};
+
+const EMPTY_FINANCIAL_INTELLIGENCE = {
+  stated_priorities: [],
+  procurement_mentions: [],
+  pain_language: [],
+  tech_investment_plans: [],
+  revenue: "unknown",
+  employee_count: "unknown",
+  source_documents: ["financials_not_enabled_v1"],
+  report_intelligence: null
+};
 
 export function parseAgentJson(agentName: string, payload: unknown): unknown {
   if (typeof payload !== "string") {
@@ -77,24 +91,19 @@ export function parseScoreData(payload: unknown): ScoreData {
 export async function processAccount(account: Partial<Account>): Promise<ScoredAccount> {
   validateAccount(account);
 
-  const [web, linkedin, hiring, financials] = await Promise.all([
-    webResearchAgent.run(`Research: ${account.name} (${account.domain})`),
-    linkedinAgent.run(
-      `Find finance/procurement leaders at ${account.name} (${account.domain})`
-    ),
-    hiringAgent.run(`Pull hiring signals for ${account.domain}`),
-    financialsAgent.run(
-      `Analyze filings: ${account.name} (ticker: ${account.ticker ?? "unknown"})`
-    )
+  const [web, hiring] = await Promise.all([
+    runWebResearchForAccount(account),
+    runHiringForAccount(account)
   ]);
 
   const researchBundle = JSON.stringify({
     company: account.name,
     domain: account.domain,
-    web_research: parseAgentObject("web_research", web),
-    linkedin_profiles: parseAgentObject("linkedin", linkedin),
-    hiring_signals: parseAgentObject("hiring", hiring),
-    financial_intelligence: parseAgentObject("financials", financials)
+    version: "v1_web_hiring",
+    web_research: parseWebResearch(web),
+    linkedin_profiles: EMPTY_LINKEDIN_PROFILES,
+    hiring_signals: parseHiringAnalysis(hiring),
+    financial_intelligence: EMPTY_FINANCIAL_INTELLIGENCE
   });
 
   const scoreResult = await scoringAgent.run(`Score this account:\n${researchBundle}`);

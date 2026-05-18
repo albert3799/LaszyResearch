@@ -1,4 +1,23 @@
 import { Agent, STRONG_MODEL } from "./openaiAgent.js";
+import { WebResearchSchema, type WebResearchOutput } from "../schemas/agentOutputs.js";
+import type { Account } from "../types.js";
+
+type WebResearchRunner = {
+  run(prompt: string): Promise<string>;
+};
+
+function parseLooseJson(payload: string): unknown {
+  try {
+    return JSON.parse(payload) as unknown;
+  } catch {
+    const start = payload.indexOf("{");
+    const end = payload.lastIndexOf("}");
+    if (start !== -1 && end !== -1 && start < end) {
+      return JSON.parse(payload.slice(start, end + 1)) as unknown;
+    }
+    throw new Error(`Invalid web research JSON: ${payload.slice(0, 300)}`);
+  }
+}
 
 export const webResearchAgent = new Agent({
   name: "web_research",
@@ -35,3 +54,15 @@ If you can't find meaningful information, return empty arrays and set confidence
   builtinTools: [{ type: "web_search" }],
   reasoningEffort: "medium"
 });
+
+export function parseWebResearch(payload: unknown): WebResearchOutput {
+  const parsed = typeof payload === "string" ? parseLooseJson(payload) : payload;
+  return WebResearchSchema.parse(parsed);
+}
+
+export async function runWebResearchForAccount(
+  account: Account,
+  runner: WebResearchRunner = webResearchAgent
+): Promise<string> {
+  return runner.run(`Research: ${account.name} (${account.domain})`);
+}

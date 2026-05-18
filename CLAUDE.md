@@ -3,12 +3,13 @@
 ## What This Project Is
 
 A multi-agent research pipeline for Zip HQ's BDR team. Takes a list of target accounts and, for each one, autonomously:
-1. Researches business priorities (web search)
-2. Finds key stakeholders (LinkedIn via Apify)
-3. Detects hiring signals (TheirStack API)
-4. Analyzes financial filings (SEC EDGAR)
-5. Scores the account on "Zip-fit" (1-10)
-6. Persists everything to Supabase
+1. V1 researches business priorities (web search)
+2. V1 detects hiring signals (TheirStack API)
+3. Scores the account on "Zip-fit" (1-10)
+4. Persists everything to Supabase
+
+LinkedIn stakeholder discovery and financial report intelligence exist in code,
+but are not enabled in the V1 orchestrator path.
 
 Built in TypeScript on the OpenAI JavaScript/TypeScript SDK and Responses API. Each agent has one tool and one job.
 
@@ -16,7 +17,7 @@ Built in TypeScript on the OpenAI JavaScript/TypeScript SDK and Responses API. E
 
 - **6 agents + 1 orchestrator** — defined in `src/agents/`
 - **4 custom tools** — defined in `src/tools/`
-- **Orchestrator** (`src/orchestrator.ts`) — processes one account at a time, runs agents 1-4 in parallel via `Promise.all`, then scoring, then persist
+- **Orchestrator** (`src/orchestrator.ts`) — V1 processes one account at a time, runs web + hiring in parallel via `Promise.all`, then scoring, then persist
 - **Database** — Supabase (Postgres). Schema in `supabase/schema.sql`.
 - **Frontend** — separate app (Replit/Lovable), reads from Supabase. NOT in this repo.
 
@@ -38,6 +39,7 @@ Built in TypeScript on the OpenAI JavaScript/TypeScript SDK and Responses API. E
 3. All agents have strict JSON output schemas in their system prompts
 4. System prompts are STABLE (no dynamic data) to enable prompt caching
 5. Dynamic data goes in the user message, not the system prompt
+6. The financials agent is a facade that runs `reportFinderAgent` then `reportAnalystAgent`
 
 ## Key Files
 
@@ -45,6 +47,8 @@ Built in TypeScript on the OpenAI JavaScript/TypeScript SDK and Responses API. E
 - `src/orchestrator.ts` — coordinates agents for each account
 - `src/agents/*.ts` — one file per agent, each with model + system prompt + tools
 - `src/agents/openaiAgent.ts` — shared Responses API agent loop
+- `src/agents/reportFinder.ts` — finds, verifies, downloads, and extracts annual/interim report text
+- `src/agents/reportAnalyst.ts` — analyses extracted report text for Zip-relevant signals
 - `src/tools/*.ts` — one file per external API integration
 - `src/tools/openaiTools.ts` — helper for local OpenAI function tools
 - `tests/*.test.ts` — Vitest tests
@@ -58,6 +62,9 @@ Built in TypeScript on the OpenAI JavaScript/TypeScript SDK and Responses API. E
 Copy `.env.example` to `.env` and fill in:
 - `OPENAI_API_KEY` — OpenAI API
 - `OPENAI_STRONG_MODEL` / `OPENAI_FAST_MODEL` — optional model overrides
+- `REPORT_FINDER_MODEL` / `REPORT_ANALYST_MODEL` — optional financial report model overrides
+- `SERPER_API_KEY` — Google search for report PDFs
+- `COMPANIES_HOUSE_API_KEY` — optional UK filings fallback
 - `APIFY_TOKEN` — LinkedIn scraping
 - `THEIRSTACK_API_KEY` — hiring signals
 - `SUPABASE_URL` + `SUPABASE_SERVICE_KEY` — database
@@ -68,6 +75,13 @@ Copy `.env.example` to `.env` and fill in:
 npm install
 cp .env.example .env  # fill in keys
 npm run pipeline
+```
+
+Standalone V1 agent checks:
+
+```bash
+npm run agent:web -- "Tesco" tescoplc.com
+npm run agent:hiring -- <account_uuid> "Tesco" tescoplc.com "https://www.linkedin.com/company/tesco/"
 ```
 
 ## Important Notes for Claude Code

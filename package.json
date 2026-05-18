@@ -6,13 +6,17 @@
   "scripts": {
     "pipeline": "tsx src/pipeline.ts",
     "dev": "tsx src/pipeline.ts",
+    "agent:web": "tsx src/scripts/runWebAgent.ts",
+    "agent:hiring": "tsx src/scripts/runHiringAgent.ts",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.89.0",
     "dotenv": "^17.2.3",
-    "openai": "^6.10.0"
+    "openai": "^6.10.0",
+    "pdf-parse": "^2.4.5",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/node": "^24.10.2",

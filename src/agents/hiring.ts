@@ -1,5 +1,24 @@
-import { searchTheirStackTool } from "../tools/theirstackTool.js";
+import { HiringAnalysisSchema, type HiringAnalysisOutput } from "../schemas/agentOutputs.js";
+import { getHiringSignalsTool } from "../tools/theirstackTool.js";
+import type { Account } from "../types.js";
 import { Agent, FAST_MODEL } from "./openaiAgent.js";
+
+type HiringRunner = {
+  run(prompt: string): Promise<string>;
+};
+
+function parseLooseJson(payload: string): unknown {
+  try {
+    return JSON.parse(payload) as unknown;
+  } catch {
+    const start = payload.indexOf("{");
+    const end = payload.lastIndexOf("}");
+    if (start !== -1 && end !== -1 && start < end) {
+      return JSON.parse(payload.slice(start, end + 1)) as unknown;
+    }
+    throw new Error(`Invalid hiring JSON: ${payload.slice(0, 300)}`);
+  }
+}
 
 export const hiringAgent = new Agent({
   name: "hiring",
@@ -8,6 +27,9 @@ export const hiringAgent = new Agent({
 (an intake-to-pay procurement platform).
 
 Pull open roles at this company, then analyze what the hiring pattern signals.
+
+You must call get_hiring_signals with the provided account_id. That tool performs
+the paid TheirStack lookup and handles the company LinkedIn URL cache.
 
 STRONG buying signals (these roles suggest the company is investing in procurement):
 - VP/Director of Procurement (especially new/greenfield roles)
@@ -35,7 +57,35 @@ IMPORTANT: Your ENTIRE response must be valid JSON with this exact schema:
 }
 
 Do not include any text outside the JSON object.`,
-  tools: [searchTheirStackTool],
+  tools: [getHiringSignalsTool],
   maxTurns: 3,
   reasoningEffort: "low"
 });
+
+export function parseHiringAnalysis(payload: unknown): HiringAnalysisOutput {
+  const parsed = typeof payload === "string" ? parseLooseJson(payload) : payload;
+  return HiringAnalysisSchema.parse(parsed);
+}
+
+export async function runHiringForAccount(
+  account: Account,
+  runner: HiringRunner = hiringAgent
+): Promise<string> {
+  if (!account.id) {
+    return JSON.stringify({
+      open_roles: [],
+      signal_strength: "weak",
+      interpretation:
+        "No account UUID was provided, so the TheirStack hiring cache/tool could not be queried."
+    });
+  }
+
+  return runner.run(
+    [
+      `Account ID: ${account.id}`,
+      `Company: ${account.name}`,
+      `Domain: ${account.domain}`,
+      account.linkedinUrl ? `Company LinkedIn URL: ${account.linkedinUrl}` : ""
+    ].filter(Boolean).join("\n")
+  );
+}

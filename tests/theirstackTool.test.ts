@@ -327,6 +327,26 @@ describe("get_hiring_signals", () => {
     expect(db.upserts[0].raw_response).toHaveProperty("data");
   });
 
+  it("cache miss accepts company_linkedin_url without account_id", async () => {
+    vi.stubEnv("THEIRSTACK_API_KEY", "test-key");
+    const db = makeDb();
+    const fetchImpl = vi.fn(async () =>
+      jsonResponse({ data: [rawJob("1", "Procurement Analyst")] })
+    ) as unknown as typeof fetch;
+
+    const result = await getHiringSignals(
+      { company_linkedin_url: "https://www.linkedin.com/company/acme/" },
+      deps(db, fetchImpl)
+    );
+
+    expect(result).toMatchObject({
+      source: "theirstack",
+      account_id: undefined,
+      account_name: "Acme Corp",
+      jobs_count: 1
+    });
+  });
+
   it("force refresh bypasses fresh cache", async () => {
     vi.stubEnv("THEIRSTACK_API_KEY", "test-key");
     const db = makeDb();

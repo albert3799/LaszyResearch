@@ -1,3 +1,5 @@
+import { tool as agentsTool, type FunctionTool } from "@openai/agents";
+
 export type JsonSchema = Record<string, unknown>;
 export type ToolHandler = (args: Record<string, unknown>) => unknown | Promise<unknown>;
 
@@ -44,4 +46,19 @@ export class OpenAITool {
     const result = await this.handler(args);
     return JSON.stringify(result);
   }
+
+  /** Wrap this tool for the @openai/agents SDK. */
+  toAgentsTool(): FunctionTool {
+    return agentsTool({
+      name: this.name,
+      description: this.description,
+      parameters: this.parameters as never,
+      strict: this.strict,
+      execute: async (args: Record<string, unknown>) => this.run(args)
+    });
+  }
+}
+
+export function toAgentsTool(oaiTool: OpenAITool): FunctionTool {
+  return oaiTool.toAgentsTool();
 }

@@ -95,7 +95,7 @@ export interface HiringCacheRow {
 }
 
 export interface HiringSignalsOutput {
-  account_id: string;
+  account_id?: string;
   account_name: string;
   company_linkedin_url: string;
   domain: string | null;
@@ -263,17 +263,17 @@ function invalidInput(message: string, accountId?: string): HiringToolError {
   return { type: "invalid_input", message, account_id: accountId };
 }
 
-function notFound(message: string, accountId: string): HiringToolError {
+function notFound(message: string, accountId?: string): HiringToolError {
   return { type: "not_found", message, account_id: accountId };
 }
 
-function authError(message: string, accountId: string): HiringToolError {
+function authError(message: string, accountId?: string): HiringToolError {
   return { type: "auth", message, account_id: accountId };
 }
 
 function transientError(
   message: string,
-  accountId: string,
+  accountId: string | undefined,
   retryAfter?: number
 ): HiringToolError {
   return {
@@ -342,7 +342,7 @@ function cacheIsFresh(cache: HiringCacheRow, now: Date): boolean {
 }
 
 function fromCache(
-  accountId: string,
+  accountId: string | undefined,
   accountName: string,
   cache: HiringCacheRow,
   isStale: boolean
@@ -604,9 +604,9 @@ interface TheirStackSearchResult {
 }
 
 async function searchTheirStackHiringJobs(
-  accountId: string,
   companyLinkedInUrl: string,
-  deps: Required<Pick<HiringSignalsDeps, "fetch" | "now" | "sleep">>
+  deps: Required<Pick<HiringSignalsDeps, "fetch" | "now" | "sleep">>,
+  accountId?: string
 ): Promise<TheirStackSearchResult> {
   const apiKey = process.env.THEIRSTACK_API_KEY;
   if (!apiKey) {
@@ -684,19 +684,23 @@ async function searchTheirStackHiringJobs(
 }
 
 export async function getHiringSignals(
-  input: { account_id?: unknown; force_refresh?: unknown },
+  input: { account_id?: unknown; company_linkedin_url?: unknown; force_refresh?: unknown },
   deps: HiringSignalsDeps = {}
 ): Promise<HiringSignalsResult> {
   const accountId = typeof input.account_id === "string" ? input.account_id.trim() : "";
+  const requestedLinkedInUrl =
+    typeof input.company_linkedin_url === "string"
+      ? normalizeCompanyLinkedInUrl(input.company_linkedin_url)
+      : "";
   const forceRefresh = input.force_refresh === true;
   const now = deps.now ?? (() => new Date());
   const sleep = deps.sleep ?? defaultSleep;
   const fetchImpl = deps.fetch ?? fetch;
 
-  if (!accountId) {
-    return invalidInput("account_id is required");
+  if (!accountId && !requestedLinkedInUrl) {
+    return invalidInput("account_id or company_linkedin_url is required");
   }
-  if (!isUuid(accountId)) {
+  if (accountId && !isUuid(accountId)) {
     return invalidInput("account_id must be a valid UUID", accountId);
   }
 
@@ -710,20 +714,33 @@ export async function getHiringSignals(
     );
   }
 
-  const accountResult = await db.getAccount(accountId);
-  if (accountResult.error) {
-    return transientError(`Account lookup failed: ${accountResult.error}`, accountId);
-  }
-  if (!accountResult.account) {
-    return notFound("Account not found", accountId);
+  let accountName = "Unknown company";
+  let companyLinkedInUrl = requestedLinkedInUrl;
+  let domain: string | null = null;
+
+  if (accountId) {
+    const accountResult = await db.getAccount(accountId);
+    if (accountResult.error) {
+      return transientError(`Account lookup failed: ${accountResult.error}`, accountId);
+    }
+    if (!accountResult.account) {
+      return notFound("Account not found", accountId);
+    }
+
+    const account = accountResult.account;
+    accountName = account.company_name;
+    domain = normalizeDomain(account.website);
+    if (!companyLinkedInUrl) {
+      companyLinkedInUrl = normalizeCompanyLinkedInUrl(account.linkedin_url);
+      if (!companyLinkedInUrl) {
+        return notFound("Account has no valid company LinkedIn URL", accountId);
+      }
+    }
   }
 
-  const account = accountResult.account;
-  const companyLinkedInUrl = normalizeCompanyLinkedInUrl(account.linkedin_url);
   if (!companyLinkedInUrl) {
-    return notFound("Account has no valid company LinkedIn URL", accountId);
+    return notFound("No valid company LinkedIn URL provided", accountId);
   }
-  const domain = normalizeDomain(account.website);
 
   const cacheResult = await db.getCache(companyLinkedInUrl);
   if (cacheResult.error) {
@@ -731,28 +748,54 @@ export async function getHiringSignals(
   }
 
   const cache = cacheResult.cache;
-  if (cache && cacheIsFresh(cache, now()) && !forceRefresh) {
-    return fromCache(accountId, account.company_name, cache, false);
+  if (cache && !accountId && accountName === "Unknown company") {
+    const cachedName = normalizeOptionalJsonRecord(cache.company_object)?.name;
+    if (typeof cachedName === "string" && cachedName.trim()) {
+      accountName = cachedName.trim();
+    }
+    if (!domain && typeof cache.domain === "string") {
+      domain = cache.domain;
+    }
   }
 
-  const theirStackResult = await searchTheirStackHiringJobs(accountId, companyLinkedInUrl, {
-    fetch: fetchImpl,
-    now,
-    sleep
-  });
+  if (cache && cacheIsFresh(cache, now()) && !forceRefresh) {
+    return fromCache(accountId || undefined, accountName, cache, false);
+  }
+
+  const theirStackResult = await searchTheirStackHiringJobs(
+    companyLinkedInUrl,
+    {
+      fetch: fetchImpl,
+      now,
+      sleep
+    },
+    accountId || undefined
+  );
 
   if (theirStackResult.error) {
     if (theirStackResult.error.type === "transient" && cache) {
-      return fromCache(accountId, account.company_name, cache, true);
+      return fromCache(accountId || undefined, accountName, cache, true);
     }
     return theirStackResult.error;
   }
 
   const fetchedAt = now().toISOString();
   const jobs = theirStackResult.jobs ?? [];
+  const companyObject = theirStackResult.companyObject;
+  if (!accountId && companyObject) {
+    const resolvedName =
+      typeof companyObject.name === "string" && companyObject.name.trim() ? companyObject.name.trim() : "";
+    if (resolvedName) {
+      accountName = resolvedName;
+    }
+  }
+  const domainFromCompanyObject =
+    domain ??
+    (typeof companyObject?.domain === "string" && companyObject.domain.trim() ? companyObject.domain.trim() : null);
+
   const writeResult = await db.upsertCache({
     company_linkedin_url: companyLinkedInUrl,
-    domain,
+    domain: domainFromCompanyObject,
     jobs,
     raw_jobs: theirStackResult.rawJobs ?? [],
     response_metadata: theirStackResult.responseMetadata ?? {},
@@ -770,10 +813,10 @@ export async function getHiringSignals(
   }
 
   return {
-    account_id: accountId,
-    account_name: account.company_name,
+    account_id: accountId || undefined,
+    account_name: accountName,
     company_linkedin_url: companyLinkedInUrl,
-    domain,
+    domain: domainFromCompanyObject,
     jobs_count: jobs.length,
     jobs,
     fetched_at: fetchedAt,
@@ -819,22 +862,26 @@ export const getHiringSignalsTool = new OpenAITool({
   description:
     "Returns recent job postings for a company, focused on procurement, finance, AP, and vendor-risk roles. Cached for 30 days -- first call hits TheirStack (paid API, use sparingly), subsequent calls within the window are free. Use this when looking for a hiring trigger to anchor outbound. Returns jobs_count: 0 and an empty jobs array if no relevant openings exist; do not fabricate a hiring trigger.",
   parameters: {
-    type: "object",
-    properties: {
-      account_id: {
-        type: "string",
-        description: "Required account UUID."
+      type: "object",
+      properties: {
+        account_id: {
+          type: "string",
+          description: "Optional account UUID for enrichment."
+        },
+        company_linkedin_url: {
+          type: "string",
+          description: "Company LinkedIn URL. Required when account_id is not provided."
+        },
+        force_refresh: {
+          type: "boolean",
+          description: "When true, bypass fresh cache and call TheirStack."
+        }
       },
-      force_refresh: {
-        type: "boolean",
-        description: "When true, bypass fresh cache and call TheirStack."
-      }
+      required: [],
+      additionalProperties: false
     },
-    required: ["account_id"],
-    additionalProperties: false
-  },
-  handler: (args) => getHiringSignals(args)
-});
+    handler: (args) => getHiringSignals(args)
+  });
 
 export const searchTheirStackTool = new OpenAITool({
   name: "search_theirstack",

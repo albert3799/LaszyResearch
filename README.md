@@ -17,7 +17,7 @@ npm run pipeline
 For each account in `accounts.json`, the pipeline:
 
 1. Runs the V1 research agents **in parallel** (web research + hiring)
-2. Feeds structured findings to a **scoring agent** (rates 1-10 on Zip-fit)
+2. Feeds structured findings to a **scoring agent** (rates 0-100 on Zip-fit)
 3. **Persists** the scored output to Supabase
 
 Built with TypeScript on the [OpenAI JavaScript/TypeScript SDK](https://developers.openai.com/api/docs) and the Responses API.
@@ -41,8 +41,11 @@ LaszyResearch/
 
 | Key | Service | Get it from |
 |-----|---------|-------------|
-| `OPENAI_API_KEY` | OpenAI API | [platform.openai.com](https://platform.openai.com) |
-| `SERPER_API_KEY` | Report PDF search | [serper.dev](https://serper.dev) |
+| `OPENAI_API_KEY` | Direct OpenAI API, only needed when not using Azure | [platform.openai.com](https://platform.openai.com) |
+| `AZURE_OPENAIGPT5.4_API_KEY` + `AZURE_OPENAIGPT5.4_ENDPOINT` | Azure strong model (`gpt-5.4`) | Azure/OpenAI-compatible v1 deployment |
+| `AZURE_OPENAIGPT5.4NANO_API_KEY` + `AZURE_OPENAIGPT5.4NANO_ENDPOINT` | Azure fast/report-finder model (`gpt-5.4-nano`) | Azure/OpenAI-compatible v1 deployment |
+| `SERPAPI_API_KEY` | Web search + report search (preferred) | [serpapi.com](https://serpapi.com) |
+| `SERPER_API_KEY` | Optional fallback web/report search key | [serper.dev](https://serper.dev) |
 | `COMPANIES_HOUSE_API_KEY` | UK filings fallback | [developer.company-information.service.gov.uk](https://developer.company-information.service.gov.uk) |
 | `APIFY_TOKEN` | LinkedIn scraping | [apify.com](https://apify.com) |
 | `THEIRSTACK_API_KEY` | Hiring signals | [theirstack.com](https://theirstack.com) |
@@ -50,8 +53,8 @@ LaszyResearch/
 | `SUPABASE_SERVICE_KEY` | Database | Supabase project settings |
 
 Optional model overrides:
-- `OPENAI_STRONG_MODEL` defaults to `gpt-5.5`
-- `OPENAI_FAST_MODEL` defaults to `gpt-5.4-mini`
+- `OPENAI_STRONG_MODEL` defaults to `gpt-5.4` with Azure credentials, otherwise `gpt-5.5`
+- `OPENAI_FAST_MODEL` defaults to `gpt-5.4-nano` with Azure credentials, otherwise `gpt-5.4-mini`
 - `REPORT_FINDER_MODEL` defaults to `gpt-5.4-nano`
 - `REPORT_ANALYST_MODEL` defaults to `gpt-5.4`
 

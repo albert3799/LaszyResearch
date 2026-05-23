@@ -1,3 +1,5 @@
+import type { ScoringOutput, SignalFinding } from "./schemas/agentOutputs.js";
+
 export type Confidence = "high" | "medium" | "low";
 
 export interface Account {
@@ -9,20 +11,17 @@ export interface Account {
   companyNumber?: string;
 }
 
-export interface ScoreData {
-  score: number;
-  confidence: Confidence;
-  rationale: string;
-  key_evidence: string[];
-  recommended_persona: string;
-  message_angle: string;
-}
-
-export interface ScoredAccount extends ScoreData {
+export interface ScoredAccount {
   id: string;
   company: string;
   domain: string;
-  raw_research: string;
+  score: number;
+  confidence: Confidence;
+  rationale: string;
+  recommended_persona: string;
+  message_angle: string;
+  signal_findings: SignalFinding[];
+  scoring: ScoringOutput;
 }
 
 export type JsonObject = Record<string, unknown>;

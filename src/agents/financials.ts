@@ -1,37 +1,17 @@
 import type { Account, JsonObject } from "../types.js";
 import {
-  parseReportIntelligence,
-  reportAnalystAgent
+  runReportAnalyst as defaultRunAnalyst,
+  type ReportIntelligence
 } from "./reportAnalyst.js";
-import { parseFinderResult, reportFinderAgent } from "./reportFinder.js";
-
-type FinancialsRunner = {
-  run(prompt: string): Promise<string>;
-};
+import { runReportFinder as defaultRunFinder } from "./reportFinder.js";
+import type { FinderResult } from "../schemas/reportOutputs.js";
 
 interface FinancialsDeps {
-  finder?: FinancialsRunner;
-  analyst?: FinancialsRunner;
+  runFinder?: (prompt: string) => Promise<FinderResult>;
+  runAnalyst?: (prompt: string) => Promise<ReportIntelligence>;
 }
 
-function parseLooseJson(payload: string): unknown {
-  try {
-    return JSON.parse(payload) as unknown;
-  } catch {
-    const start = payload.indexOf("{");
-    const end = payload.lastIndexOf("}");
-    if (start !== -1 && end !== -1 && start < end) {
-      return JSON.parse(payload.slice(start, end + 1)) as unknown;
-    }
-    throw new Error(`Invalid JSON payload: ${payload.slice(0, 300)}`);
-  }
-}
-
-function emptyFinancials(
-  account: Account,
-  reason: string,
-  sourceUrl?: string | null
-): JsonObject {
+function emptyFinancials(reason: string, sourceUrl?: string | null): JsonObject {
   return {
     stated_priorities: [],
     procurement_mentions: [],
@@ -47,33 +27,32 @@ function emptyFinancials(
 export async function runReportFinancials(
   account: Account,
   deps: FinancialsDeps = {}
-): Promise<string> {
-  const finder = deps.finder ?? reportFinderAgent;
-  const analyst = deps.analyst ?? reportAnalystAgent;
+): Promise<JsonObject> {
+  const runFinder = deps.runFinder ?? defaultRunFinder;
+  const runAnalyst = deps.runAnalyst ?? defaultRunAnalyst;
 
   const finderInput = [
     `Company: ${account.name}`,
     `Domain: ${account.domain}`,
     account.ticker ? `Ticker: ${account.ticker}` : "",
     account.companyNumber ? `UK Companies House Number: ${account.companyNumber}` : ""
-  ].filter(Boolean).join("\n");
+  ]
+    .filter(Boolean)
+    .join("\n");
 
-  const finderRaw = await finder.run(finderInput);
-  const finderOutput = parseFinderResult(parseLooseJson(finderRaw));
+  const finderOutput = await runFinder(finderInput);
 
   if (finderOutput.status !== "found") {
-    return JSON.stringify(
-      emptyFinancials(
-        account,
-        finderOutput.error ?? `Report finder returned status: ${finderOutput.status}`,
-        finderOutput.sourceUrl
-      )
+    return emptyFinancials(
+      finderOutput.error ?? `Report finder returned status: ${finderOutput.status}`,
+      finderOutput.sourceUrl
     );
   }
 
   if (!finderOutput.text) {
-    return JSON.stringify(
-      emptyFinancials(account, "Report finder returned found but no extracted text", finderOutput.sourceUrl)
+    return emptyFinancials(
+      "Report finder returned found but no extracted text",
+      finderOutput.sourceUrl
     );
   }
 
@@ -87,15 +66,16 @@ export async function runReportFinancials(
     finderOutput.text
   ].join("\n");
 
-  const analystRaw = await analyst.run(analystInput);
-  const intelligence = parseReportIntelligence(parseLooseJson(analystRaw));
+  const intelligence = await runAnalyst(analystInput);
   const sourceDocument = [
     finderOutput.documentType ?? intelligence.documentType,
     finderOutput.reportYear ?? intelligence.reportYear,
     finderOutput.sourceUrl ?? ""
-  ].filter(Boolean).join(" - ");
+  ]
+    .filter(Boolean)
+    .join(" - ");
 
-  return JSON.stringify({
+  return {
     stated_priorities: intelligence.managementPriorities,
     procurement_mentions: intelligence.procurementSignals,
     pain_language: [
@@ -110,20 +90,10 @@ export async function runReportFinancials(
     report_intelligence: intelligence,
     confidence: intelligence.confidence,
     strategic_summary: intelligence.summary
-  });
+  };
 }
 
 export const financialsAgent = {
   name: "financials",
-  runForAccount: runReportFinancials,
-  run: async (prompt: string): Promise<string> => {
-    const match = prompt.match(/Analyze filings:\s*(.*?)\s*\(ticker:\s*(.*?)\)/i);
-    const name = match?.[1]?.trim() || "unknown";
-    const ticker = match?.[2]?.trim();
-    return runReportFinancials({
-      name,
-      domain: "unknown",
-      ticker: ticker && ticker !== "unknown" ? ticker : undefined
-    });
-  }
+  runForAccount: runReportFinancials
 };

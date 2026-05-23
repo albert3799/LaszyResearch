@@ -1,11 +1,24 @@
-import { scrapeLinkedInProfileTool } from "../tools/apifyTool.js";
-import { Agent, FAST_MODEL } from "./openaiAgent.js";
+import { Agent, run, webSearchTool } from "@openai/agents";
+import { z } from "zod";
 
-export const linkedinAgent = new Agent({
-  name: "linkedin",
-  model: FAST_MODEL,
-  system: `You find key stakeholders at the target company who would be
-decision-makers or influencers for procurement/spend management tooling.
+import { scrapeLinkedInProfileTool } from "../tools/apifyTool.js";
+import { configureAgentsRuntime, defaultFastModel } from "./modelClient.js";
+
+export const StakeholderSchema = z.object({
+  name: z.string(),
+  title: z.string(),
+  tenure: z.string(),
+  background: z.string()
+});
+
+export const LinkedinOutputSchema = z.object({
+  stakeholders: z.array(StakeholderSchema)
+});
+
+export type LinkedinOutput = z.infer<typeof LinkedinOutputSchema>;
+
+const INSTRUCTIONS = `You find key stakeholders at the target company who would be
+decision-makers or influencers for procurement / spend management tooling.
 
 Target titles (in priority order):
 - Chief Procurement Officer (CPO)
@@ -16,27 +29,37 @@ Target titles (in priority order):
 - Head of Strategic Sourcing
 - VP/Director of Operations
 
-Your process:
-1. Search for LinkedIn profiles matching these titles at the company
-2. Scrape the top 2-3 most relevant profiles
-3. Extract structured data from each
+Process:
+1. Use web_search to find LinkedIn profile URLs matching these titles at the company.
+2. Call scrape_linkedin_profile on the top 2-3 most relevant URLs.
+3. Extract structured data from each profile.
 
-IMPORTANT: Your ENTIRE response must be valid JSON with this exact schema:
-{
-  "stakeholders": [
-    {
-      "name": "string",
-      "title": "string - current title",
-      "tenure": "string - how long in this role (e.g., '2 years')",
-      "background": "string - 1-2 sentences on relevant experience"
-    }
-  ]
+If you cannot find relevant stakeholders, return stakeholders=[].`;
+
+export function buildLinkedinAgent(): Agent<unknown, typeof LinkedinOutputSchema> {
+  configureAgentsRuntime();
+  return new Agent({
+    name: "linkedin",
+    model: defaultFastModel(),
+    instructions: INSTRUCTIONS,
+    tools: [scrapeLinkedInProfileTool.toAgentsTool(), webSearchTool()],
+    outputType: LinkedinOutputSchema,
+    modelSettings: { reasoning: { effort: "low" } }
+  });
 }
 
-If you cannot find relevant stakeholders, return: {"stakeholders": []}
-Do not include any text outside the JSON object.`,
-  tools: [scrapeLinkedInProfileTool],
-  builtinTools: [{ type: "web_search" }],
-  maxTurns: 5,
-  reasoningEffort: "low"
-});
+export async function runLinkedinForCompany(
+  company: string,
+  domain: string
+): Promise<LinkedinOutput> {
+  const agent = buildLinkedinAgent();
+  const result = await run(
+    agent,
+    `Find procurement decision-makers at ${company} (${domain}).`,
+    { maxTurns: 5 }
+  );
+  if (!result.finalOutput) {
+    throw new Error("linkedin agent returned no final output");
+  }
+  return result.finalOutput;
+}

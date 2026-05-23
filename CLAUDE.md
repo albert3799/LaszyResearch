@@ -5,7 +5,7 @@
 A multi-agent research pipeline for Zip HQ's BDR team. Takes a list of target accounts and, for each one, autonomously:
 1. V1 researches business priorities (web search)
 2. V1 detects hiring signals (TheirStack API)
-3. Scores the account on "Zip-fit" (1-10)
+3. Scores the account on "Zip-fit" (0-100)
 4. Persists everything to Supabase
 
 LinkedIn stakeholder discovery and financial report intelligence exist in code,
@@ -31,6 +31,11 @@ Built in TypeScript on the OpenAI JavaScript/TypeScript SDK and Responses API. E
 | financials | `OPENAI_STRONG_MODEL` (`gpt-5.5`) | Long document analysis |
 | scoring | `OPENAI_STRONG_MODEL` (`gpt-5.5`) | Multi-signal reasoning |
 | output | `OPENAI_FAST_MODEL` (`gpt-5.4-mini`) | DB write, logic already done |
+
+When Azure OpenAI-compatible credentials are present in `.env`, defaults align to
+the configured Azure deployments: strong defaults to `gpt-5.4`, fast defaults to
+`gpt-5.4-nano`. Direct OpenAI fallback defaults remain `gpt-5.5` and
+`gpt-5.4-mini`.
 
 ## Context Engineering Rules
 
@@ -60,10 +65,13 @@ Built in TypeScript on the OpenAI JavaScript/TypeScript SDK and Responses API. E
 ## Environment Variables
 
 Copy `.env.example` to `.env` and fill in:
-- `OPENAI_API_KEY` — OpenAI API
+- `OPENAI_API_KEY` — OpenAI API, only needed when not using Azure credentials
+- `AZURE_OPENAIGPT5.4_API_KEY` + `AZURE_OPENAIGPT5.4_ENDPOINT` — Azure strong model
+- `AZURE_OPENAIGPT5.4NANO_API_KEY` + `AZURE_OPENAIGPT5.4NANO_ENDPOINT` — Azure fast/report-finder model
 - `OPENAI_STRONG_MODEL` / `OPENAI_FAST_MODEL` — optional model overrides
 - `REPORT_FINDER_MODEL` / `REPORT_ANALYST_MODEL` — optional financial report model overrides
-- `SERPER_API_KEY` — Google search for report PDFs
+- `SERPAPI_API_KEY` — Preferred web search key (web research + report search)
+- `SERPER_API_KEY` — Optional fallback web/report search key
 - `COMPANIES_HOUSE_API_KEY` — optional UK filings fallback
 - `APIFY_TOKEN` — LinkedIn scraping
 - `THEIRSTACK_API_KEY` — hiring signals
@@ -87,7 +95,7 @@ npm run agent:hiring -- <account_uuid> "Tesco" tescoplc.com "https://www.linkedi
 ## Important Notes for Claude Code
 
 - The OpenAI SDK entry point is `new OpenAI().responses.create(...)`
-- Use hosted `web_search` via the Responses API for web research agents
+- Use a SerpAPI-backed `web_search` function tool for web research (fallback to Serper key if SerpAPI key is absent)
 - Use `src/tools/openaiTools.ts` for local function tools
 - The project-level `src/agents/openaiAgent.ts` wrapper preserves the desired `.run()` interface for each agent definition
 - Each tool function should handle errors gracefully and return error dicts rather than raising exceptions

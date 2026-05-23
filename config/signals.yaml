@@ -1,0 +1,217 @@
+# Signal definitions for the LaszyResearch pipeline.
+#
+# Each signal is researched by an independent SignalAgent that returns a
+# SignalFinding (see src/schemas/agentOutputs.ts). The scoring agent reads
+# the bundle of findings and produces an overall account score.
+#
+# Field meanings:
+#   id              - stable identifier, used in evidence sources as signal.<id>
+#   label           - human-readable name
+#   buying_reason   - drive_savings | operational_efficiency | reduce_risk
+#                     (which of Zip's three buying reasons this signal supports)
+#   trigger_code    - matches a code in TriggerCodeSchema for scoring
+#   description     - one-sentence what we're looking for
+#   why_it_matters  - one-sentence mechanism explaining Zip relevance
+#   search_queries  - ordered list of search queries the agent should run.
+#                     Template variables: {company}, {domain}, {year}
+#   strength_rubric - what counts as strong / moderate / weak / none
+#   timeliness_rubric - what counts as fresh / stale / expired
+#   enabled         - if false, orchestrator skips this signal
+
+signals:
+  - id: ipo
+    label: IPO / capital event
+    buying_reason: drive_savings
+    trigger_code: ipo_recent
+    description: >
+      IPO filing, direct listing, SPAC, secondary listing, or recent large
+      capital raise where the company has gained public-market or institutional
+      scrutiny.
+    why_it_matters: >
+      Public-market scrutiny forces tighter financial controls, SOX-style
+      compliance, and visible cost discipline — procurement transformation
+      becomes a board topic.
+    search_queries:
+      - "{company} IPO OR \"direct listing\" OR \"S-1\" 2025 2026"
+      - "{company} \"capital raise\" OR \"series\" OR \"funding round\" 2025 2026"
+      - "{company} \"going public\" OR \"public offering\""
+    strength_rubric:
+      strong: Filed S-1 / prospectus or completed IPO within last 12 months, with named bankers or dated filing.
+      moderate: Publicly discussed IPO plans by named executives within last 18 months.
+      weak: Vague rumours or analyst speculation with no company confirmation.
+      none: No mention of IPO or capital event.
+    timeliness_rubric:
+      fresh: Event within last 12 months.
+      stale: 12-24 months ago.
+      expired: ">24 months ago, no continuing activity."
+
+  - id: leadership_change
+    label: Leadership change
+    buying_reason: operational_efficiency
+    trigger_code: new_cfo
+    description: >
+      New CFO, CPO, Head of Procurement, CIO, or COO appointed in the last
+      12 months. Also captures interim appointments and announced searches.
+    why_it_matters: >
+      New finance / procurement / tech leaders run a tooling review in their
+      first two quarters — the natural window to buy or replace S2P platforms.
+    search_queries:
+      - "{company} \"new CFO\" OR \"appoints\" OR \"announces\" 2025 2026"
+      - "{company} \"chief procurement officer\" OR \"head of procurement\" appointed"
+      - "{company} \"new CIO\" OR \"new COO\" appointed 2025 2026"
+    strength_rubric:
+      strong: Named executive joined within last 12 months in CFO/CPO/Head-of-Procurement/CIO/COO role, with a press release or dated announcement.
+      moderate: Announced search or interim appointment within last 12 months.
+      weak: Reorganisation mentioned but no named role.
+      none: No leadership change found.
+    timeliness_rubric:
+      fresh: Appointment within last 12 months.
+      stale: 12-18 months ago (still in tooling-review window).
+      expired: ">18 months ago."
+
+  - id: pe_vc_acquisition
+    label: PE / VC acquisition
+    buying_reason: drive_savings
+    trigger_code: pe_acquisition_recent
+    description: >
+      Recent private-equity buyout, growth-equity round, or VC acquisition
+      within the last 24 months.
+    why_it_matters: >
+      PE sponsors run a cost-out playbook in the first 18-24 months; procurement
+      consolidation is a standard early move and Zip is often on the shortlist.
+    search_queries:
+      - "{company} \"acquired by\" OR \"buyout\" OR \"private equity\" 2024 2025 2026"
+      - "{company} portfolio company OR \"sponsor\" OR \"investor\" 2025 2026"
+      - "{company} \"growth equity\" OR \"recapitalization\" 2024 2025"
+    strength_rubric:
+      strong: Named sponsor acquired the company within last 24 months, deal value or date confirmed.
+      moderate: Reported acquisition discussions or partial stake within last 24 months.
+      weak: Sponsor mentioned but ownership stake or date unclear.
+      none: No PE/VC ownership signal.
+    timeliness_rubric:
+      fresh: Acquisition closed within last 24 months.
+      stale: 24-36 months ago (cost-out playbook winding down).
+      expired: ">36 months ago."
+
+  - id: erp_migration
+    label: ERP migration
+    buying_reason: operational_efficiency
+    trigger_code: erp_migration
+    description: >
+      Active or imminent migration to S/4HANA, Oracle Fusion / Cloud ERP,
+      NetSuite OneWorld, Workday Financials, or a similar tier-1 ERP.
+    why_it_matters: >
+      Companies replumbing ERP decide adjacent procurement tooling at the same
+      time, not after. The window during ERP migration is the highest-intent
+      moment to pitch Zip.
+    search_queries:
+      - "{company} \"S/4HANA\" OR \"S4 HANA\" OR \"SAP migration\" 2025 2026"
+      - "{company} \"Oracle Fusion\" OR \"Oracle Cloud ERP\" implementation"
+      - "{company} \"NetSuite\" OR \"Workday Financials\" rollout 2025 2026"
+    strength_rubric:
+      strong: Named ERP migration program with executive sponsor, vendor, and timeline within next 24 months.
+      moderate: ERP migration announced but timeline vague.
+      weak: ERP modernization mentioned at the strategy level without a named program.
+      none: No ERP migration signal.
+    timeliness_rubric:
+      fresh: Migration active or starting within next 24 months.
+      stale: Migration completed within last 6 months (still in stabilisation).
+      expired: Migration completed >12 months ago.
+
+  - id: regulatory_deadline
+    label: Regulatory deadline
+    buying_reason: reduce_risk
+    trigger_code: regulatory_deadline
+    description: >
+      Approaching DORA, SOX, FCA, EU procurement directive, GxP, NIS2, or
+      sector-specific compliance deadline that requires supplier controls,
+      audit trails, or TPRM.
+    why_it_matters: >
+      Regulatory deadlines force named programs with budget; procurement
+      tooling that delivers auditability becomes a line-item buy.
+    search_queries:
+      - "{company} DORA OR \"Digital Operational Resilience\" compliance"
+      - "{company} SOX OR \"section 404\" OR FCA OR \"NIS2\" compliance 2025 2026"
+      - "{company} \"third-party risk\" OR \"supplier risk\" OR \"GxP\" program"
+    strength_rubric:
+      strong: Named regulation with a known deadline impacting this company, with quoted exec commitment.
+      moderate: Regulation mentioned as a priority area without a quoted deadline.
+      weak: Generic compliance language with no named regulation.
+      none: No regulatory signal.
+    timeliness_rubric:
+      fresh: Deadline within next 18 months OR active program now.
+      stale: Deadline 18-36 months out.
+      expired: Deadline already passed and no remediation activity.
+
+  - id: m_and_a_integration
+    label: M&A integration
+    buying_reason: drive_savings
+    trigger_code: m_and_a_integration
+    description: >
+      Recent acquisitions creating duplicate suppliers, overlapping contracts,
+      or a stated integration program.
+    why_it_matters: >
+      Post-merger integration creates immediate need for consolidated spend
+      visibility and supplier rationalisation — Zip's core value prop.
+    search_queries:
+      - "{company} acquisition OR acquires 2024 2025 2026"
+      - "{company} \"integration\" OR \"synergies\" OR \"combined company\" 2025 2026"
+      - "{company} merger OR \"combined\" suppliers OR contracts"
+    strength_rubric:
+      strong: Closed or announced acquisition within last 18 months with stated integration program.
+      moderate: Recent acquisitions mentioned without integration detail.
+      weak: Historic M&A only.
+      none: No M&A signal.
+    timeliness_rubric:
+      fresh: Deal closed within last 18 months.
+      stale: 18-30 months ago.
+      expired: ">30 months ago."
+
+  - id: hiring
+    label: Procurement hiring signal
+    buying_reason: operational_efficiency
+    trigger_code: procurement_transformation
+    description: >
+      Open procurement, sourcing, accounts payable, or vendor-management roles
+      that name an initiative, vendor, or transformation program in the JD.
+    why_it_matters: >
+      A company hiring a Director of Sourcing to "consolidate 2,000+ suppliers"
+      is telling you the project is funded and the headcount is approved.
+    # Hiring uses the TheirStack tool, not web search — see src/tools/theirstackTool.ts.
+    # search_queries here are unused; the SignalAgent for hiring routes to
+    # TheirStack via the get_hiring_signals tool.
+    search_queries: []
+    tool: theirstack
+    strength_rubric:
+      strong: Open role with named initiative, vendor, dollar target, or named exec sponsor in the JD.
+      moderate: Open senior procurement role with generic transformation language.
+      weak: Junior or operational roles only.
+      none: No procurement roles open.
+    timeliness_rubric:
+      fresh: Role is currently open.
+      stale: Role recently closed (<3 months).
+      expired: No recent activity.
+
+  - id: earnings_pressure
+    label: Earnings pressure / cost mandate
+    buying_reason: drive_savings
+    trigger_code: earnings_pressure
+    description: >
+      Missed guidance, margin compression, stated CEO/CFO cost-out target,
+      activist pressure, or capital-allocation review.
+    why_it_matters: >
+      CFOs under earnings pressure look for fast, visible savings. Procurement
+      and contract spend is the largest controllable lever.
+    search_queries:
+      - "{company} \"missed guidance\" OR \"margin compression\" earnings 2025 2026"
+      - "{company} \"cost reduction\" OR \"cost out\" OR \"efficiency program\" target"
+      - "{company} activist investor OR \"capital allocation\" review 2025 2026"
+    strength_rubric:
+      strong: Quoted cost-out target with named owner and timeline within last 12 months.
+      moderate: Reported margin pressure or guidance miss without a named program.
+      weak: Generic cost-discipline language.
+      none: No earnings pressure signal.
+    timeliness_rubric:
+      fresh: Within last 12 months.
+      stale: 12-24 months ago.
+      expired: ">24 months ago and no continuing program."

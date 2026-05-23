@@ -28,3 +28,6 @@ build/
 npm-debug.log*
 pnpm-debug.log*
 yarn-debug.log*
+
+# Claude Code local state (settings, worktrees, venv, secrets)
+.claude/

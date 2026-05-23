@@ -118,9 +118,12 @@ create table if not exists public.account_research (
   account_id             text unique not null,
   company_name           text not null,
   company_domain         text,
-  score                  int check (score between 1 and 10),
+  score                  int check (score between 0 and 100),
   confidence             text check (confidence in ('high', 'medium', 'low')),
+  criteria_scores        jsonb,
   rationale              text,
+  evidence_for           jsonb,
+  evidence_against       jsonb,
   key_evidence           jsonb,
   recommended_persona    text,
   message_angle          text,
@@ -131,7 +134,16 @@ create table if not exists public.account_research (
 );
 
 alter table public.account_research
-  add column if not exists account_uuid uuid references public.accounts(id) on delete set null;
+  add column if not exists account_uuid uuid references public.accounts(id) on delete set null,
+  add column if not exists criteria_scores jsonb,
+  add column if not exists evidence_for jsonb,
+  add column if not exists evidence_against jsonb;
+
+alter table public.account_research
+  drop constraint if exists account_research_score_check;
+
+alter table public.account_research
+  add constraint account_research_score_check check (score between 0 and 100);
 
 create index if not exists account_research_account_uuid_idx
   on public.account_research (account_uuid);
@@ -223,6 +235,46 @@ create index if not exists company_hiring_signals_domain_idx
 
 create index if not exists company_hiring_signals_fetched_idx
   on public.company_hiring_signals (fetched_at desc);
+
+do $$
+declare
+  primary_key_exists boolean;
+begin
+  select exists (
+    select 1
+    from pg_constraint c
+    join pg_class t on t.oid = c.conrelid
+    join pg_namespace n on n.oid = t.relnamespace
+    where n.nspname = 'public'
+      and t.relname = 'company_hiring_signals'
+      and c.contype = 'p'
+  ) into primary_key_exists;
+
+  if not primary_key_exists then
+    if exists (
+      select 1
+      from public.company_hiring_signals
+      where company_linkedin_url is null
+    ) then
+      raise exception
+        'company_hiring_signals has null company_linkedin_url values; populate them before adding primary key';
+    end if;
+
+    if exists (
+      select 1
+      from public.company_hiring_signals
+      group by company_linkedin_url
+      having count(*) > 1
+    ) then
+      raise exception
+        'company_hiring_signals has duplicate company_linkedin_url values; dedupe before adding primary key';
+    end if;
+
+    alter table public.company_hiring_signals
+      add constraint company_hiring_signals_pkey primary key (company_linkedin_url);
+  end if;
+end;
+$$;
 
 -- 7. Serper/report finder search cache.
 create table if not exists public.report_search_cache (

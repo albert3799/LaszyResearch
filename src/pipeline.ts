@@ -48,7 +48,7 @@ export async function main(): Promise<void> {
 
     try {
       const result = await processAccount(account);
-      console.log(`  -> Score: ${result.score}/10 (${result.confidence})`);
+      console.log(`  -> Score: ${result.score}/100 (${result.confidence})`);
       results.push(result);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -62,10 +62,10 @@ export async function main(): Promise<void> {
   if (results.length > 0) {
     const avgScore =
       results.reduce((total, result) => total + result.score, 0) / results.length;
-    console.log(`  Average score: ${avgScore.toFixed(1)}/10`);
+    console.log(`  Average score: ${avgScore.toFixed(1)}/100`);
     console.log("  Top accounts:");
     for (const result of [...results].sort((a, b) => b.score - a.score).slice(0, 5)) {
-      console.log(`    - ${result.company} - ${result.score}/10`);
+      console.log(`    - ${result.company} - ${result.score}/100`);
     }
   }
   console.log(`${"=".repeat(60)}\n`);

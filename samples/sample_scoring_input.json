@@ -1,0 +1,56 @@
+{
+  "company": "Globex Financial",
+  "domain": "globex-financial.com",
+  "web_research": {
+    "ownership": [
+      "Globex Financial acquired by Thoma Bravo in November 2025 for $4.1B — Reuters, Nov 2025",
+      "Thoma Bravo announced 100-day plan focused on 'operational efficiency and procurement consolidation across the portfolio' — Thoma Bravo press release, Dec 2025"
+    ],
+    "digital_initiatives": [
+      "Globex CIO confirmed S/4HANA rollout to replace legacy SAP ECC, target go-live Q3 2026 — Globex investor day, Feb 2026",
+      "Globex digital transformation program 'One Globex' includes finance, procurement, and HR systems consolidation — Globex annual report 2025"
+    ],
+    "financial_objectives": [
+      "Thoma Bravo set a $80M run-rate cost-out target by end of 2026, including 'consolidating procurement systems across acquired entities' — Reuters, March 2026",
+      "Globex CFO stated on Q4 earnings call: 'We see significant opportunity in indirect spend management' — Q4 2025 earnings transcript"
+    ],
+    "business_priorities": [
+      "Integration of three regional subsidiaries (Globex EMEA, Globex APAC, Globex LATAM) under common operating model by end of 2026 — Globex Capital Markets Day, Jan 2026",
+      "Stated focus on regulatory compliance ahead of DORA enforcement in EU operations — Globex 10-K, 2025"
+    ],
+    "recent_news": [
+      "Globex hired Maria Chen as Chief Procurement Officer from PepsiCo, started March 2026 — LinkedIn announcement",
+      "Globex announced opening of new Singapore hub, 200 hires planned in 2026 — Bloomberg, April 2026"
+    ],
+    "org_complexity": [
+      "Globex operates in 23 countries with ~140 legal entities post-acquisition — Globex annual report 2025",
+      "Subject to SOX, DORA (EU operations), and FCA (UK operations) — Globex 10-K, 2025"
+    ]
+  },
+  "hiring_signals": {
+    "open_roles": [
+      {
+        "job_title": "VP of Procurement Transformation",
+        "role_summary": "Owns the design and execution of Globex's procurement transformation program, including supplier consolidation across newly-integrated subsidiaries.",
+        "business_objectives": "Consolidate supplier base from ~12,000 to under 4,000 and stand up a single source-to-pay platform supporting all global entities by end of 2026."
+      },
+      {
+        "job_title": "Director of Source-to-Pay Operations",
+        "role_summary": "Leads day-to-day operations of the source-to-pay function, partnering with Finance and IT on the S/4HANA rollout.",
+        "business_objectives": "Drive 30% reduction in maverick spend and roll out a unified intake and approvals process aligned with the S/4HANA implementation."
+      },
+      {
+        "job_title": "Senior Manager, Third-Party Risk",
+        "role_summary": "Manages vendor risk assessment and ongoing monitoring across Globex's supplier base, with focus on DORA-regulated entities.",
+        "business_objectives": "Stand up a TPRM program meeting DORA requirements by January 2027 enforcement deadline."
+      },
+      {
+        "job_title": "Accounts Payable Specialist",
+        "role_summary": "Processes invoices, manages vendor payments, and reconciles AP ledger.",
+        "business_objectives": "Not stated in JD."
+      }
+    ]
+  },
+  "linkedin_profiles": { "profiles": [] },
+  "financial_intelligence": null
+}

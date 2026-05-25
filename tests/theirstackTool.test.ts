@@ -276,7 +276,7 @@ describe("get_hiring_signals", () => {
     expect(request[0]).toBe("https://api.theirstack.com/v1/jobs/search");
     expect(body).toMatchObject({
       company_linkedin_url_or: [linkedInUrl],
-      posted_at_gte: "20250517",
+      posted_at_gte: "2025-05-17",
       limit: 5,
       offset: 0,
       include_total_results: false,

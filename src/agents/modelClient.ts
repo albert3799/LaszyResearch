@@ -26,6 +26,20 @@ const AZURE_MODEL_ENV: Record<string, AzureEnvAliases> = {
       "AZURE_OPENAIGPT5.4_ENDPOINT",
       "AZURE_OPENAIGPT_5_4_ENDPOINT"
     ]
+  },
+  "gpt-5.4-mini": {
+    apiKeys: [
+      "AZURE_OPENAIGPT5.4MINI_API_KEY",
+      "AZURE_OPENAIGPT_5_4_MINI_API_KEY",
+      "AZURE_OPENAIGPT5.4_API_KEY",
+      "AZURE_OPENAIGPT_5_4_API_KEY"
+    ],
+    endpoints: [
+      "AZURE_OPENAIGPT5.4MINI_ENDPOINT",
+      "AZURE_OPENAIGPT_5_4_MINI_ENDPOINT",
+      "AZURE_OPENAIGPT5.4_ENDPOINT",
+      "AZURE_OPENAIGPT_5_4_ENDPOINT"
+    ]
   }
 };
 

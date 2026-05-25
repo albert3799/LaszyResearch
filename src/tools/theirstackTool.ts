@@ -361,23 +361,25 @@ function fromCache(
   };
 }
 
-function toYYYYMMDD(date: Date): string {
+// TheirStack's `posted_at_gte` is a date field and rejects compact/datetime
+// values — it must be an exact ISO date, e.g. 2025-05-24.
+function toIsoDate(date: Date): string {
   const year = date.getUTCFullYear();
   const month = String(date.getUTCMonth() + 1).padStart(2, "0");
   const day = String(date.getUTCDate()).padStart(2, "0");
-  return `${year}${month}${day}`;
+  return `${year}-${month}-${day}`;
 }
 
-function twelveMonthsAgoYYYYMMDD(now: Date): string {
+function twelveMonthsAgoIsoDate(now: Date): string {
   const date = new Date(now.getTime());
   date.setUTCFullYear(date.getUTCFullYear() - 1);
-  return toYYYYMMDD(date);
+  return toIsoDate(date);
 }
 
 function theirStackSearchBody(companyLinkedInUrl: string, now: Date): Record<string, unknown> {
   return {
     company_linkedin_url_or: [companyLinkedInUrl],
-    posted_at_gte: twelveMonthsAgoYYYYMMDD(now),
+    posted_at_gte: twelveMonthsAgoIsoDate(now),
     job_title_or: [...HIRING_TITLE_TERMS],
     job_title_pattern_or: [...HIRING_TITLE_PATTERNS],
     job_title_not: [...EXCLUDED_TITLE_TERMS],
@@ -660,9 +662,12 @@ async function searchTheirStackHiringJobs(
 
     const retryable = response.status === 429 || response.status >= 500;
     if (!retryable) {
+      const detail = await response.text().catch(() => "");
       return {
         error: transientError(
-          `TheirStack request failed: ${response.status} ${response.statusText}`,
+          `TheirStack request failed: ${response.status} ${response.statusText}${
+            detail ? ` — ${detail.slice(0, 600)}` : ""
+          }`,
           accountId
         )
       };

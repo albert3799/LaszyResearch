@@ -31,3 +31,6 @@ yarn-debug.log*
 
 # Claude Code local state (settings, worktrees, venv, secrets)
 .claude/
+
+# Local app data (scored results)
+data/

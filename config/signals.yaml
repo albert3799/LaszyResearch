@@ -7,6 +7,8 @@
 # Field meanings:
 #   id              - stable identifier, used in evidence sources as signal.<id>
 #   label           - human-readable name
+#   category        - financial | transformation | leadership
+#                     (groups signals on the scorer's scorecard)
 #   buying_reason   - drive_savings | operational_efficiency | reduce_risk
 #                     (which of Zip's three buying reasons this signal supports)
 #   trigger_code    - matches a code in TriggerCodeSchema for scoring
@@ -21,25 +23,29 @@
 signals:
   - id: ipo
     label: IPO / capital event
+    category: financial
     buying_reason: drive_savings
     trigger_code: ipo_recent
     description: >
-      IPO filing, direct listing, SPAC, secondary listing, or recent large
-      capital raise where the company has gained public-market or institutional
-      scrutiny.
+      A capital event affecting the COMPANY ITSELF: IPO filing, direct listing,
+      SPAC, secondary listing, or a primary equity raise / buyout into the
+      company's own balance sheet. EXCLUDES investment funds or vehicles the
+      company raises to deploy on behalf of investors (AUM, fund vintages,
+      credit/PE funds) — for asset managers that is business as usual, not a
+      capital event.
     why_it_matters: >
-      Public-market scrutiny forces tighter financial controls, SOX-style
-      compliance, and visible cost discipline — procurement transformation
-      becomes a board topic.
+      Public-market scrutiny on the company's own equity forces tighter
+      financial controls, SOX-style compliance, and visible cost discipline —
+      procurement transformation becomes a board topic.
     search_queries:
-      - "{company} IPO OR \"direct listing\" OR \"S-1\" 2025 2026"
-      - "{company} \"capital raise\" OR \"series\" OR \"funding round\" 2025 2026"
-      - "{company} \"going public\" OR \"public offering\""
+      - "{company} IPO OR \"direct listing\" OR \"S-1 filing\" 2025 2026"
+      - "{company} \"initial public offering\" OR \"going public\" OR \"public offering\""
+      - "{company} buyout OR \"take private\" OR \"equity investment in {company}\" 2025 2026"
     strength_rubric:
-      strong: Filed S-1 / prospectus or completed IPO within last 12 months, with named bankers or dated filing.
-      moderate: Publicly discussed IPO plans by named executives within last 18 months.
+      strong: Filed S-1 / prospectus or completed IPO of the company's own shares within last 12 months, with named bankers or dated filing.
+      moderate: Publicly discussed IPO/listing plans for the company itself by named executives within last 18 months.
       weak: Vague rumours or analyst speculation with no company confirmation.
-      none: No mention of IPO or capital event.
+      none: No capital event for the company itself. A fund/vehicle the company raised to invest does NOT count.
     timeliness_rubric:
       fresh: Event within last 12 months.
       stale: 12-24 months ago.
@@ -47,6 +53,7 @@ signals:
 
   - id: leadership_change
     label: Leadership change
+    category: leadership
     buying_reason: operational_efficiency
     trigger_code: new_cfo
     description: >
@@ -71,6 +78,7 @@ signals:
 
   - id: pe_vc_acquisition
     label: PE / VC acquisition
+    category: financial
     buying_reason: drive_savings
     trigger_code: pe_acquisition_recent
     description: >
@@ -95,6 +103,7 @@ signals:
 
   - id: erp_migration
     label: ERP migration
+    category: transformation
     buying_reason: operational_efficiency
     trigger_code: erp_migration
     description: >
@@ -120,6 +129,7 @@ signals:
 
   - id: regulatory_deadline
     label: Regulatory deadline
+    category: transformation
     buying_reason: reduce_risk
     trigger_code: regulatory_deadline
     description: >
@@ -145,6 +155,7 @@ signals:
 
   - id: m_and_a_integration
     label: M&A integration
+    category: transformation
     buying_reason: drive_savings
     trigger_code: m_and_a_integration
     description: >
@@ -169,6 +180,7 @@ signals:
 
   - id: hiring
     label: Procurement hiring signal
+    category: transformation
     buying_reason: operational_efficiency
     trigger_code: procurement_transformation
     description: >
@@ -194,6 +206,7 @@ signals:
 
   - id: earnings_pressure
     label: Earnings pressure / cost mandate
+    category: financial
     buying_reason: drive_savings
     trigger_code: earnings_pressure
     description: >

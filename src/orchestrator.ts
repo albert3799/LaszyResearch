@@ -28,11 +28,11 @@ export async function processAccount(
     id: account.id ?? account.domain,
     company: account.name,
     domain: account.domain,
-    score: scoring.conclusion.overall_score,
-    confidence: scoring.conclusion.confidence,
-    rationale: scoring.conclusion.reasoning,
-    recommended_persona: scoring.conclusion.recommended_persona,
-    message_angle: scoring.conclusion.message_angle,
+    score: scoring.overall_score,
+    confidence: scoring.confidence,
+    rationale: scoring.summary,
+    recommended_persona: scoring.recommended_persona,
+    message_angle: scoring.message_angle,
     signal_findings: findings,
     scoring
   };
@@ -46,14 +46,9 @@ export async function processAccount(
     rationale: result.rationale,
     recommended_persona: result.recommended_persona,
     message_angle: result.message_angle,
-    criteria_scores: scoring.criteria_scores,
-    evidence_for: scoring.evidence_assessment
-      .filter((e) => e.weight === "strong" || e.weight === "moderate")
-      .map((e) => `[${e.id}] ${e.source}: "${e.source_quote}"`),
-    evidence_against: scoring.caps_applied
-      .filter((c) => c.applied)
-      .map((c) => `${c.code} ${c.name}: ${c.supporting_quote ?? ""}`),
-    key_evidence: scoring.conclusion.triggers_detected,
+    scorecard: scoring.scorecard,
+    top_signals: scoring.top_signals,
+    cap_applied: scoring.cap_applied,
     raw_research: JSON.stringify({ findings, scoring })
   });
 

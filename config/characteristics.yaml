@@ -1,0 +1,120 @@
+# SIGNALS — enduring CHARACTERISTICS that make a company a good FIT for Zip
+# (the "fit / ICP" dimension). Each is researched by an independent agent that
+# returns a SignalFinding (see src/schemas/research.ts) graded by `degree`
+# (high|medium|low|none). No timeliness — these are stable traits.
+#
+# Fields: id / label / description / why_it_matters / research_intent /
+#         seed_queries ({company} {domain} {year} templated) / degree_rubric / enabled
+
+signals:
+  - id: regulated_industry
+    label: Regulated / compliance-heavy industry
+    description: >
+      Operates in a regulated, supervised sector — banking, financial services,
+      insurance, pharma, healthcare, utilities, defence — subject to ongoing
+      supervisory, audit, or third-party-risk regimes.
+    why_it_matters: >
+      Regulated firms have a structural, permanent need for supplier controls,
+      auditability, and TPRM — exactly what intake-to-pay enforces.
+    research_intent: >
+      Determine the company's industry and whether it is a regulated/supervised
+      entity. Check the company's About/investor pages, regulators, and profiles.
+      Distinguish a licensed/regulated entity from a firm that merely sells to one.
+    seed_queries:
+      - '"{company}" industry OR sector regulated OR "financial services" OR banking'
+      - '"{company}" regulated OR "authorised by" OR licence OR supervised'
+      - '"{company}" about OR "who we are" {domain}'
+    degree_rubric:
+      high: Core regulated entity (e.g. licensed bank, insurer, asset manager, pharma) under active supervision.
+      medium: Operates within a regulated sector but is not itself the licensed/supervised entity.
+      low: Light-touch regulation typical of any business.
+      none: Not a regulated industry.
+
+  - id: workforce_scale
+    label: Workforce scale & growth
+    description: >
+      A large and/or steadily growing employee base — especially knowledge workers
+      in G&A, finance, operations, engineering — implying high and rising volumes
+      of purchasing, software, and services spend.
+    why_it_matters: >
+      More employees = more purchase requests, SaaS/tool sprawl, and onboarding
+      spend. Manual intake and approvals don't scale — Zip's core wedge.
+    research_intent: >
+      Establish the company's headcount and trajectory: current employee count and
+      whether it is growing. Use LinkedIn employee counts, careers pages, and press.
+    seed_queries:
+      - '"{company}" number of employees OR headcount {year}'
+      - '"{company}" employees LinkedIn'
+      - '"{company}" hiring OR "growing team" OR expansion {year}'
+    degree_rubric:
+      high: Large workforce (~thousands+) and/or clear rapid growth.
+      medium: Mid-sized workforce or moderate growth.
+      low: Small or flat workforce.
+      none: Tiny headcount; manual purchasing is manageable.
+
+  - id: geographic_footprint
+    label: Geographic footprint
+    description: >
+      Operations spanning multiple countries or regions — offices, legal entities,
+      or cross-border service delivery.
+    why_it_matters: >
+      Multi-geography brings multiple currencies, tax/compliance regimes, suppliers,
+      and entities — purchasing/approval complexity that centralised intake-to-pay
+      resolves.
+    research_intent: >
+      Determine how many countries/regions the company operates in — office
+      locations, legal entities, and "global/international" statements in investor
+      or about materials.
+    seed_queries:
+      - '"{company}" offices OR locations OR countries OR "global presence"'
+      - '"{company}" international OR "operates in" OR subsidiaries {year}'
+      - '"{company}" headquarters OR "where we operate" {domain}'
+    degree_rubric:
+      high: Operations across many countries/regions with multiple entities.
+      medium: A few countries / one or two international locations.
+      low: Single country, one location.
+      none: Purely local, minimal footprint.
+
+  - id: supplier_dependence
+    label: High third-party / supplier dependence
+    description: >
+      Material reliance on external suppliers, outsourcing, or vendors; a large
+      non-payroll / indirect spend base.
+    why_it_matters: >
+      Heavy third-party spend is the lever Zip pulls — visibility, consolidation,
+      and control of supplier and contract spend.
+    research_intent: >
+      Assess how dependent the company is on third parties: outsourcing, large
+      supplier networks, heavy SaaS/professional-services spend, or a sizable
+      non-payroll cost base. Annual reports and supplier/vendor pages help.
+    seed_queries:
+      - '"{company}" suppliers OR vendors OR outsourcing OR "third-party"'
+      - '"{company}" "operating expenses" OR procurement spend annual report'
+      - '"{company}" "supplier code" OR "vendor management" OR partners'
+    degree_rubric:
+      high: Heavily reliant on outsourcing/suppliers with a large indirect spend base.
+      medium: Meaningful but not dominant third-party spend.
+      low: Mostly internal; limited supplier dependence.
+      none: Negligible third-party spend.
+
+  - id: decentralized_structure
+    label: Decentralized / acquisitive structure
+    description: >
+      A holding-company, multi-subsidiary, or roll-up structure — many business
+      units or acquired entities, with no evident central procurement function.
+    why_it_matters: >
+      Fragmented, decentralised purchasing across entities is exactly the mess Zip
+      consolidates into one intake-to-pay process.
+    research_intent: >
+      Determine whether the company is a holding company / roll-up with multiple
+      subsidiaries or business units, and whether procurement appears centralised or
+      fragmented. Corporate structure and "our businesses" pages help.
+    seed_queries:
+      - '"{company}" subsidiaries OR "group companies" OR "business units"'
+      - '"{company}" "holding company" OR "portfolio of" OR roll-up'
+      - '"{company}" "our businesses" OR brands OR divisions {domain}'
+    degree_rubric:
+      high: Holding co / roll-up with many subsidiaries and no central procurement.
+      medium: Some subsidiaries or divisions; partial central function.
+      low: Mostly single, centralised entity.
+      none: Simple single-entity structure.

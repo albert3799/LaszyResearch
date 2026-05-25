@@ -125,6 +125,9 @@ create table if not exists public.account_research (
   evidence_for           jsonb,
   evidence_against       jsonb,
   key_evidence           jsonb,
+  scorecard              jsonb,
+  top_signals            jsonb,
+  cap_applied            text,
   recommended_persona    text,
   message_angle          text,
   raw_research           jsonb,
@@ -137,7 +140,10 @@ alter table public.account_research
   add column if not exists account_uuid uuid references public.accounts(id) on delete set null,
   add column if not exists criteria_scores jsonb,
   add column if not exists evidence_for jsonb,
-  add column if not exists evidence_against jsonb;
+  add column if not exists evidence_against jsonb,
+  add column if not exists scorecard jsonb,
+  add column if not exists top_signals jsonb,
+  add column if not exists cap_applied text;
 
 alter table public.account_research
   drop constraint if exists account_research_score_check;

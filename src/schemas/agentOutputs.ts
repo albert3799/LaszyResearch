@@ -66,226 +66,115 @@ export const HiringAnalysisSchema = z.object({
 
 export type HiringAnalysisOutput = z.infer<typeof HiringAnalysisSchema>;
 
-export const CriterionScoreSchema = z.object({
-  score: z.number().int().min(0).max(100),
-  summary: z.string()
-});
-
-export const ScoreDataSchema = z.object({
-  criteria_scores: z.object({
-    drive_savings: CriterionScoreSchema,
-    operational_efficiency: CriterionScoreSchema,
-    reduce_risk: CriterionScoreSchema
-  }),
-  evidence_for: z.array(z.string()),
-  evidence_against: z.array(z.string()),
-  score: z.number().int().min(0).max(100),
-  confidence: ConfidenceSchema,
-  rationale: z.string(),
-  recommended_persona: z.string(),
-  message_angle: z.string()
-});
-
-export type ScoreDataOutput = z.infer<typeof ScoreDataSchema>;
-
 // =============================================================================
-// New marking-homework scoring schema (V2).
-// The orchestrator's parseScoreData still uses the V1 ScoreDataSchema above.
-// Use ScoringOutputSchema when running the new scoring prompt standalone.
+// Scorecard scoring schema.
+// The scoring agent receives the bundle of SignalFindings and produces ONE
+// scorecard row per signal plus an overall score and a readable summary.
 // =============================================================================
 
-export const TriggerCodeSchema = z.enum([
-  "pe_acquisition_recent",
-  "pe_cost_out",
-  "new_cfo",
-  "new_cpo",
-  "erp_migration",
-  "procurement_transformation",
-  "m_and_a_integration",
-  "regulatory_deadline",
-  "tprm_initiative",
-  "audit_finding",
-  "supplier_consolidation",
-  "earnings_pressure",
-  "ipo_recent",
-  "geographic_expansion",
-  "headcount_growth"
+// The three signal categories. Each signal in config/signals.yaml is tagged
+// with one; the scorecard groups rows by category.
+export const SignalCategorySchema = z.enum([
+  "financial",
+  "transformation",
+  "leadership"
 ]);
+export type SignalCategory = z.infer<typeof SignalCategorySchema>;
 
-// Evidence sources are signal-prefixed: signal.<signal_id>. The scoring
-// agent receives signal findings only; legacy web_research.* sources are no
-// longer emitted.
-export const EvidenceSourceSchema = z
-  .string()
-  .regex(
-    /^signal\.[a-z0-9_]+$/,
-    "source must be of the form signal.<signal_id>"
-  );
+// How much a single signal moves the overall score.
+export const ContributionSchema = z.enum(["high", "medium", "low", "none"]);
 
-export const SpecificitySchema = z.enum(["specific", "generic", "vague"]);
-export const RecencySchema = z.enum(["fresh", "stale", "expired", "undated"]);
-export const WeightSchema = z.enum(["strong", "moderate", "weak", "noise"]);
-
-const wordCountAtMost = (n: number) => (s: string) =>
-  s.trim().length === 0 || s.trim().split(/\s+/).length <= n;
-
-export const EvidenceItemSchema = z.object({
-  id: z.string().regex(/^e\d+$/, "id must be e1, e2, ..."),
-  source: EvidenceSourceSchema,
-  claim: z.string().min(1),
-  source_quote: z
+export const ScorecardRowSchema = z.object({
+  signal_id: z.string().min(1).describe("The signal_id this row scores."),
+  category: SignalCategorySchema.describe(
+    "Category of the signal; copy from the value provided in the input."
+  ),
+  found: z.boolean().describe("Whether the signal agent found evidence."),
+  grade: SignalStrengthSchema.describe(
+    "Strength of the signal: strong / moderate / weak / none."
+  ),
+  timeliness: SignalTimelinessSchema.describe(
+    "How recent the evidence is: fresh / stale / expired / undated."
+  ),
+  contribution: ContributionSchema.describe(
+    "How much this signal moves the overall score: high / medium / low / none."
+  ),
+  evidence_quote: z
+    .string()
+    .describe('Strongest verbatim quote (<=25 words), or "" if none.'),
+  source_url: z
+    .string()
+    .nullable()
+    .describe("URL or document title for the quote, or null."),
+  note: z
     .string()
     .min(1)
-    .refine(wordCountAtMost(20), "source_quote must be ≤20 words"),
-  trigger_matched: TriggerCodeSchema.nullable(),
-  specificity: SpecificitySchema,
-  recency: RecencySchema,
-  weight: WeightSchema,
-  comment: z.string().min(1)
+    .describe("One-sentence analyst note explaining the grade + contribution.")
 });
 
-const CapCeilings = { C1: 40, C2: 25 } as const;
-const CapNames = {
-  C1: "RECENT_S2P_IMPLEMENTATION",
-  C2: "ACTIVE_FINANCIAL_DISTRESS"
-} as const;
+export type ScorecardRow = z.infer<typeof ScorecardRowSchema>;
 
-export const CapApplicationSchema = z
-  .object({
-    code: z.enum(["C1", "C2"]),
-    name: z.enum(["RECENT_S2P_IMPLEMENTATION", "ACTIVE_FINANCIAL_DISTRESS"]),
-    applied: z.boolean(),
-    supporting_evidence_id: z.string().nullable(),
-    supporting_quote: z.string().nullable(),
-    ceiling: z.number().int()
-  })
-  .refine(
-    (c) => c.name === CapNames[c.code],
-    "cap name must match cap code (C1=RECENT_S2P_IMPLEMENTATION, C2=ACTIVE_FINANCIAL_DISTRESS)"
-  )
-  .refine(
-    (c) => c.ceiling === CapCeilings[c.code],
-    "cap ceiling must match cap code (C1=40, C2=25)"
-  )
-  .refine(
-    (c) => !c.applied || (!!c.supporting_evidence_id && !!c.supporting_quote),
-    "applied caps require supporting_evidence_id and supporting_quote"
-  );
-
-export const CriterionEvaluationSchema = z
-  .object({
-    supporting_evidence_ids: z.array(z.string()),
-    reasoning: z.string().min(1),
-    verbatim_quote: z.string(),
-    score: z.number().int().min(0).max(100)
-  })
-  .refine(
-    (c) => c.score <= 65 || c.verbatim_quote.length > 0,
-    "verbatim_quote required when score > 65"
-  )
-  .refine(
-    (c) => wordCountAtMost(15)(c.verbatim_quote),
-    "verbatim_quote must be ≤15 words"
-  );
-
-export const ConclusionSchema = z.object({
-  reasoning: z.string().min(1),
-  triggers_detected: z.array(TriggerCodeSchema),
-  lowest_cap_ceiling: z.number().int().nullable(),
-  overall_score: z.number().int().min(0).max(100),
-  confidence: ConfidenceSchema,
-  recommended_persona: z.string().min(1),
-  message_angle: z.string().min(1)
+// A per-category roll-up of the scorecard. Derived deterministically by
+// runScoring from the scorecard rows — the model does not produce it.
+export const CategoryBreakdownSchema = z.object({
+  category: SignalCategorySchema,
+  rolled_grade: SignalStrengthSchema.describe(
+    "Best (highest) grade among this category's signals."
+  ),
+  contribution: ContributionSchema.describe(
+    "Best contribution among this category's signals."
+  ),
+  signals_found: z
+    .array(z.string())
+    .describe("signal_ids in this category with found=true.")
 });
+
+export type CategoryBreakdown = z.infer<typeof CategoryBreakdownSchema>;
 
 export const ScoringOutputSchema = z
   .object({
-    evidence_assessment: z.array(EvidenceItemSchema),
-    caps_applied: z.array(CapApplicationSchema).length(2),
-    criteria_scores: z.object({
-      drive_savings: CriterionEvaluationSchema,
-      operational_efficiency: CriterionEvaluationSchema,
-      reduce_risk: CriterionEvaluationSchema
-    }),
-    conclusion: ConclusionSchema
+    scorecard: z
+      .array(ScorecardRowSchema)
+      .describe("One row per signal_finding received, in any order."),
+    overall_score: z
+      .number()
+      .int()
+      .min(0)
+      .max(100)
+      .describe("0-100. Reflects the strength of the BEST buying case."),
+    confidence: ConfidenceSchema,
+    cap_applied: z
+      .string()
+      .nullable()
+      .describe(
+        "Name of the hard cap that bound the score (RECENT_S2P_IMPLEMENTATION or ACTIVE_FINANCIAL_DISTRESS), or null."
+      ),
+    top_signals: z
+      .array(z.string())
+      .describe("signal_ids driving the score; must appear in scorecard."),
+    summary: z
+      .string()
+      .min(1)
+      .describe("2-4 sentence BDR-readable summary of the buying case."),
+    recommended_persona: z.string().min(1),
+    message_angle: z.string().min(1)
   })
   .superRefine((data, ctx) => {
-    // 1. Evidence ids must be unique
-    const ids = data.evidence_assessment.map((e) => e.id);
-    const seen = new Set<string>();
-    for (const id of ids) {
-      if (seen.has(id)) {
+    // top_signals must reference rows that exist in the scorecard.
+    const ids = new Set(data.scorecard.map((r) => r.signal_id));
+    for (const t of data.top_signals) {
+      if (!ids.has(t)) {
         ctx.addIssue({
           code: "custom",
-          path: ["evidence_assessment"],
-          message: `duplicate evidence id: ${id}`
-        });
-      }
-      seen.add(id);
-    }
-
-    // 2. supporting_evidence_ids must reference real ids
-    const idSet = new Set(ids);
-    for (const [criterion, c] of Object.entries(data.criteria_scores)) {
-      for (const ref of c.supporting_evidence_ids) {
-        if (!idSet.has(ref)) {
-          ctx.addIssue({
-            code: "custom",
-            path: ["criteria_scores", criterion, "supporting_evidence_ids"],
-            message: `unknown evidence id: ${ref}`
-          });
-        }
-      }
-    }
-
-    // 3. caps_applied must contain exactly C1 and C2, each exactly once
-    const codes = data.caps_applied.map((c) => c.code).sort();
-    if (codes.join(",") !== "C1,C2") {
-      ctx.addIssue({
-        code: "custom",
-        path: ["caps_applied"],
-        message: "caps_applied must contain exactly C1 and C2"
-      });
-    }
-
-    // 4. lowest_cap_ceiling and overall_score must respect the binding cap
-    const applied = data.caps_applied.filter((c) => c.applied);
-    const lowest = applied.length
-      ? Math.min(...applied.map((c) => c.ceiling))
-      : null;
-
-    if (data.conclusion.lowest_cap_ceiling !== lowest) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["conclusion", "lowest_cap_ceiling"],
-        message: `lowest_cap_ceiling should be ${lowest === null ? "null" : lowest}`
-      });
-    }
-    if (lowest !== null && data.conclusion.overall_score > lowest) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["conclusion", "overall_score"],
-        message: `overall_score (${data.conclusion.overall_score}) exceeds binding cap (${lowest})`
-      });
-    }
-
-    // 5. triggers_detected must be a subset of triggers seen on evidence
-    const evidenceTriggers = new Set(
-      data.evidence_assessment
-        .map((e) => e.trigger_matched)
-        .filter((t): t is NonNullable<typeof t> => t !== null)
-    );
-    for (const t of data.conclusion.triggers_detected) {
-      if (!evidenceTriggers.has(t)) {
-        ctx.addIssue({
-          code: "custom",
-          path: ["conclusion", "triggers_detected"],
-          message: `${t} not present in evidence_assessment`
+          path: ["top_signals"],
+          message: `top_signal "${t}" is not present in scorecard`
         });
       }
     }
   });
 
-export type ScoringOutput = z.infer<typeof ScoringOutputSchema>;
-export type EvidenceItem = z.infer<typeof EvidenceItemSchema>;
-export type CapApplication = z.infer<typeof CapApplicationSchema>;
+// category_breakdown is derived by runScoring (not produced by the model, so
+// it is not part of the model's output schema above).
+export type ScoringOutput = z.infer<typeof ScoringOutputSchema> & {
+  category_breakdown?: CategoryBreakdown[];
+};

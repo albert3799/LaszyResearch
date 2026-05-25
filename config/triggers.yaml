@@ -1,0 +1,223 @@
+# TRIGGERS — recent EVENTS that make Zip relevant NOW (the "timing" dimension).
+# Each trigger is researched by an independent agent that returns a TriggerFinding
+# (see src/schemas/research.ts) graded by strength + timeliness.
+#
+# Fields:
+#   id / label / category (financial|transformation|leadership)
+#   description     - what the event is
+#   why_it_matters  - the Zip mechanism
+#   research_intent - the goal handed to the agent (it searches adaptively)
+#   seed_queries    - starting searches; {company} {domain} {year} are templated
+#   tools           - web_search and/or fetch_page
+#   strength_rubric / timeliness_rubric
+#   enabled
+
+triggers:
+  - id: procurement_transformation
+    label: Procurement / finance transformation program
+    category: transformation
+    description: >
+      A named program to overhaul how the company buys: source-to-pay /
+      procure-to-pay rollout, intake-to-pay, AP automation, spend management,
+      supplier consolidation, or a finance-transformation workstream that
+      explicitly touches procurement or accounts payable.
+    why_it_matters: >
+      This is direct intent — the company is already trying to fix procurement.
+      It is the highest-conviction trigger; everything else is a proxy for it.
+    research_intent: >
+      Find evidence the company is actively modernising procurement, AP, or
+      source-to-pay. Try the company's own site, press releases, exec interviews,
+      and vendor case studies (Coupa/Ariba/Ivalua/Zip etc.).
+    seed_queries:
+      - '"{company}" procurement transformation OR "source-to-pay" OR "intake to pay"'
+      - '"{company}" "accounts payable" automation OR "spend management"'
+      - '"{company}" "shared services" OR "global business services" finance'
+    tools: [web_search]
+    strength_rubric:
+      strong: Named program with an owner, vendor, or budget to transform procurement/AP within the last 18 months.
+      moderate: Stated intent to modernise procurement/AP without a named program or owner.
+      weak: Generic digitisation/efficiency language touching finance, no procurement specifics.
+      none: No procurement/finance transformation evidence.
+    timeliness_rubric:
+      fresh: Program active or announced within last 12 months.
+      stale: 12-24 months ago.
+      expired: ">24 months ago, no continuing activity."
+
+  - id: regulatory_event
+    label: Regulatory event
+    category: transformation
+    description: >
+      A NEW regulatory obligation, an approaching compliance deadline, a breach,
+      fine, or audit finding affecting the company — e.g. DORA, SOX, FCA, NIS2,
+      GxP, or sector-specific rules requiring supplier controls or audit trails.
+    why_it_matters: >
+      Regulatory events force named programs with budget; procurement tooling
+      that delivers auditability and third-party-risk control becomes a line-item buy.
+    research_intent: >
+      Find a company-specific regulatory obligation, deadline, breach, or fine in
+      the last 12-18 months. Check news, regulator notices, and the company's own
+      risk/compliance statements. Quote the regulation by name.
+    seed_queries:
+      - '"{company}" DORA OR SOX OR FCA OR NIS2 compliance {year}'
+      - '"{company}" fine OR breach OR "enforcement action" OR "audit finding" {year}'
+      - '"{company}" "third-party risk" OR "supplier risk" regulation deadline'
+    tools: [web_search]
+    strength_rubric:
+      strong: Named regulation with a known deadline, breach, or fine specific to this company, quoted.
+      moderate: Named regulation cited as a priority for the company without a deadline/penalty.
+      weak: Generic compliance language, no named regulation tied to the company.
+      none: No regulatory event.
+    timeliness_rubric:
+      fresh: Deadline within next 18 months, or breach/fine within last 12 months.
+      stale: Deadline 18-36 months out, or event 12-24 months ago.
+      expired: Deadline long passed with no remediation activity.
+
+  - id: leadership_change
+    label: Leadership change
+    category: leadership
+    description: >
+      New CFO, CPO, Head of Procurement, CIO, or COO appointed in the last 12
+      months — including interim appointments and announced searches.
+    why_it_matters: >
+      New finance / procurement / tech leaders run a tooling review in their
+      first two quarters — the natural window to buy or replace S2P platforms.
+    research_intent: >
+      Find a recent (last 12 months) appointment of a CFO, CPO, Head of
+      Procurement, CIO, or COO at the company itself. Prefer dated press releases
+      or the company's own announcements. Note any cost/transformation remit.
+    seed_queries:
+      - '"{company}" appoints OR "new CFO" OR "chief financial officer" {year}'
+      - '"{company}" "chief procurement officer" OR "head of procurement" appointed'
+      - '"{company}" "new CIO" OR "new COO" OR "chief operating officer" {year}'
+    tools: [web_search]
+    strength_rubric:
+      strong: Named exec joined within last 12 months in a CFO/CPO/Head-of-Procurement/CIO/COO role, dated, ideally with a cost or transformation remit.
+      moderate: Announced search or interim appointment within last 12 months.
+      weak: Reorganisation mentioned but no named target role.
+      none: No qualifying leadership change.
+    timeliness_rubric:
+      fresh: Appointment within last 12 months.
+      stale: 12-18 months ago (still in tooling-review window).
+      expired: ">18 months ago."
+
+  - id: capital_event
+    label: Ownership / capital event
+    category: financial
+    description: >
+      A capital event affecting the COMPANY ITSELF: PE buyout, take-private,
+      IPO / direct listing, SPAC, or a primary equity raise into the company.
+      EXCLUDES investment funds/vehicles the company raises to deploy for clients
+      (AUM, fund vintages) — for asset managers that is business as usual.
+    why_it_matters: >
+      New owners or public-market scrutiny force cost discipline and tighter
+      financial controls; procurement consolidation is a standard early move and
+      Zip is often on the shortlist.
+    research_intent: >
+      Find a recent (last 24 months) change in the company's OWN ownership or
+      capital structure — PE buyout, take-private, IPO, or major equity raise into
+      the company. Name the sponsor/bankers and the date. Ignore funds the company
+      raised to invest on behalf of others.
+    seed_queries:
+      - '"{company}" acquired OR buyout OR "take private" OR "private equity" {year}'
+      - '"{company}" IPO OR "initial public offering" OR "direct listing" {year}'
+      - '"equity investment in {company}" OR "{company}" recapitalization {year}'
+    tools: [web_search]
+    strength_rubric:
+      strong: Named sponsor buyout, take-private, or completed IPO of the company itself within last 24 months, dated.
+      moderate: Reported deal discussions or a partial stake in the company within last 24 months.
+      weak: Ownership/sponsor mentioned but stake or date unclear.
+      none: No capital event for the company itself (a fund it raised does NOT count).
+    timeliness_rubric:
+      fresh: Event closed within last 18 months.
+      stale: 18-36 months ago.
+      expired: ">36 months ago."
+
+  - id: m_and_a_integration
+    label: M&A integration
+    category: transformation
+    description: >
+      Recent acquisitions by the company creating duplicate suppliers, overlapping
+      contracts, or a stated post-merger integration program.
+    why_it_matters: >
+      Post-merger integration creates immediate need for consolidated spend
+      visibility and supplier rationalisation — Zip's core value prop.
+    research_intent: >
+      Find acquisitions the company made in the last 18 months and any stated
+      integration/synergy program. Prefer dated press releases. Distinguish a deal
+      from an actual integration effort.
+    seed_queries:
+      - '"{company}" acquires OR acquisition OR "to acquire" {year}'
+      - '"{company}" integration OR synergies OR "combined company" {year}'
+      - '"{company}" merger suppliers OR contracts OR consolidation'
+    tools: [web_search]
+    strength_rubric:
+      strong: Closed/announced acquisition within last 18 months WITH a stated integration program.
+      moderate: Recent acquisition(s) within last 18 months without integration detail.
+      weak: Historic M&A only.
+      none: No M&A signal.
+    timeliness_rubric:
+      fresh: Deal closed within last 18 months.
+      stale: 18-30 months ago.
+      expired: ">30 months ago."
+
+  - id: earnings_pressure
+    label: Earnings / EBITDA / cost pressure
+    category: financial
+    description: >
+      Margin compression, missed guidance, declining EBITDA, a stated cost-out /
+      efficiency target, restructuring, or capital-allocation review affecting the
+      company itself.
+    why_it_matters: >
+      Under earnings/EBITDA pressure, leaders hunt fast, visible savings — third-
+      party and contract spend is the largest controllable lever, and Zip delivers
+      spend visibility and control quickly.
+    research_intent: >
+      Look FIRST in the company's own financial disclosures — latest annual report,
+      interim / half-year results, earnings-call transcripts, and regulatory (RNS)
+      announcements — for management statements on margin, EBITDA, or cost programs.
+      Quote management verbatim with the report and period.
+    seed_queries:
+      - '"{company}" annual report OR "interim results" EBITDA OR margin OR "cost reduction"'
+      - '"{company}" "cost-out" OR "efficiency programme" OR restructuring {year}'
+      - '"{company}" results "operating margin" OR guidance {year}'
+    tools: [web_search]
+    strength_rubric:
+      strong: Quoted, dated cost-out/efficiency target or explicit margin/EBITDA-pressure statement from management within last 12 months (ideally from a report or earnings call).
+      moderate: Reported margin pressure, EBITDA decline, or guidance miss within last 12 months, no named program.
+      weak: Generic cost-discipline language or older commentary.
+      none: No earnings/EBITDA/cost-pressure signal.
+    timeliness_rubric:
+      fresh: Statement/event within last 12 months.
+      stale: 12-24 months ago.
+      expired: ">24 months ago."
+
+  - id: procurement_hiring
+    label: Procurement / finance hiring
+    category: transformation
+    description: >
+      Open job postings for procurement, sourcing, accounts payable, vendor /
+      supplier management, or finance-transformation roles, found on the web
+      (careers page, LinkedIn Jobs, Indeed).
+    why_it_matters: >
+      Hiring for these roles — especially when the JD names an initiative, tool,
+      dollar target, or exec sponsor — signals a funded, approved procurement or
+      finance project happening right now.
+    research_intent: >
+      Search the web for the company's OPEN procurement/finance roles. For the most
+      relevant 1-3 postings, call fetch_page on the job URL and READ THE FULL JD.
+      Look in the JD text for named initiatives, S2P/P2P/ERP tools, transformation
+      language, supplier-consolidation goals, or an executive sponsor.
+    seed_queries:
+      - '"{company}" careers procurement OR sourcing OR "accounts payable"'
+      - '"{company}" "source-to-pay" OR "vendor management" OR "finance transformation" job {year}'
+      - 'site:linkedin.com/jobs "{company}" procurement OR sourcing'
+    tools: [web_search, fetch_page]
+    strength_rubric:
+      strong: Open role whose JD names a specific initiative, tool/vendor, $ target, or exec sponsor for procurement/spend transformation.
+      moderate: Open senior procurement/AP/sourcing role with generic transformation language in the JD.
+      weak: Only junior/operational roles, or relevant roles found but the JD could not be retrieved.
+      none: No relevant procurement roles open.
+    timeliness_rubric:
+      fresh: Role currently open / posted within ~3 months.
+      stale: Recently closed (<3 months).
+      expired: No recent activity.

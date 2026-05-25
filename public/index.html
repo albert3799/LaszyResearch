@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Zip Territory Research Agent</title>
+    <style>
+      :root {
+        --bg: #0b1020;
+        --panel: #ffffff;
+        --panel-2: #f7f8fb;
+        --line: #e7e9f0;
+        --ink: #11152a;
+        --muted: #6b7186;
+        --accent: #5b4bf5;
+        --accent-2: #00d3b0;
+        --green: #16a34a;
+        --amber: #d98a00;
+        --red: #e0483c;
+        --shadow: 0 1px 2px rgba(16, 21, 42, 0.06), 0 8px 24px rgba(16, 21, 42, 0.06);
+        --radius: 14px;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; height: 100%; }
+      body {
+        font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        color: var(--ink);
+        background: var(--panel-2);
+        -webkit-font-smoothing: antialiased;
+      }
+      /* Top bar */
+      header.topbar {
+        background: radial-gradient(1200px 200px at 10% -40%, #2a2f6b 0%, var(--bg) 60%);
+        color: #fff;
+        padding: 18px 28px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        position: sticky;
+        top: 0;
+        z-index: 30;
+      }
+      .brand { display: flex; align-items: center; gap: 12px; }
+      .logo {
+        width: 34px; height: 34px; border-radius: 9px;
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        display: grid; place-items: center; font-weight: 800; color: #fff;
+        box-shadow: 0 6px 18px rgba(91, 75, 245, 0.45);
+      }
+      .brand h1 { font-size: 17px; margin: 0; letter-spacing: 0.2px; font-weight: 650; }
+      .brand p { margin: 1px 0 0; font-size: 12px; color: #aab0d0; }
+      .topbar .spacer { flex: 1; }
+      .stat { font-size: 12px; color: #c9cde6; display: flex; gap: 18px; }
+      .stat b { color: #fff; font-weight: 600; }
+
+      main { padding: 22px 28px 60px; max-width: 1500px; margin: 0 auto; }
+
+      /* Upload / empty state */
+      .drop {
+        border: 1.5px dashed #c7cbe0; border-radius: var(--radius); background: var(--panel);
+        padding: 40px; text-align: center; cursor: pointer; transition: 0.15s;
+      }
+      .drop:hover, .drop.drag { border-color: var(--accent); background: #fbfaff; }
+      .drop h2 { margin: 10px 0 4px; font-size: 18px; }
+      .drop p { margin: 0; color: var(--muted); font-size: 13px; }
+
+      /* Toolbar */
+      .toolbar {
+        display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap;
+      }
+      .search {
+        flex: 1; min-width: 220px; max-width: 380px;
+        border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; font-size: 13px;
+        background: var(--panel);
+      }
+      .btn {
+        border: 1px solid var(--line); background: var(--panel); color: var(--ink);
+        padding: 9px 14px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer;
+        transition: 0.12s; white-space: nowrap;
+      }
+      .btn:hover { border-color: #c3c7da; }
+      .btn.primary {
+        background: linear-gradient(135deg, var(--accent), #6f5bff); color: #fff; border: none;
+        box-shadow: 0 6px 16px rgba(91, 75, 245, 0.3);
+      }
+      .btn.primary:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+      .btn.ghost { background: transparent; }
+      .pill-count { font-size: 12px; color: var(--muted); margin-left: auto; }
+
+      /* Table */
+      .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+      table { width: 100%; border-collapse: collapse; font-size: 13px; }
+      thead th {
+        position: sticky; top: 70px; background: var(--panel-2); z-index: 5;
+        text-align: left; padding: 11px 12px; font-size: 11px; letter-spacing: 0.4px;
+        text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--line);
+        cursor: pointer; user-select: none; white-space: nowrap;
+      }
+      thead th.no-sort { cursor: default; }
+      tbody td { padding: 11px 12px; border-bottom: 1px solid #f0f1f6; vertical-align: middle; }
+      tbody tr:hover { background: #fafaff; cursor: pointer; }
+      tbody tr.sel { background: #f3f1ff; }
+      .name { font-weight: 600; }
+      .sub { color: var(--muted); font-size: 11.5px; }
+      td.center { text-align: center; }
+      .muted { color: var(--muted); }
+
+      .chip {
+        display: inline-flex; align-items: center; justify-content: center;
+        min-width: 40px; padding: 3px 8px; border-radius: 999px; font-weight: 700; font-size: 12.5px;
+      }
+      .chip.green { background: #e7f6ec; color: var(--green); }
+      .chip.amber { background: #fdf1dd; color: var(--amber); }
+      .chip.red { background: #fcebe9; color: var(--red); }
+      .chip.gray { background: #eef0f5; color: var(--muted); }
+
+      .tech { display: flex; gap: 4px; flex-wrap: wrap; }
+      .tag { background: #eef0f7; color: #444b66; border-radius: 6px; padding: 2px 7px; font-size: 11px; }
+
+      .growth.pos { color: var(--green); font-weight: 600; }
+      .growth.neg { color: var(--red); font-weight: 600; }
+
+      .status { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; }
+      .dot { width: 8px; height: 8px; border-radius: 50%; background: #c7cbe0; }
+      .status.queued .dot { background: var(--amber); }
+      .status.running .dot { background: var(--accent); animation: pulse 1s infinite; }
+      .status.done .dot { background: var(--green); }
+      .status.error .dot { background: var(--red); }
+      @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.25; } }
+      .spin { width: 13px; height: 13px; border: 2px solid #d7d9ea; border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      .rowbtn { font-size: 11.5px; padding: 5px 10px; }
+
+      input[type="checkbox"] { width: 15px; height: 15px; accent-color: var(--accent); cursor: pointer; }
+
+      /* Drawer */
+      .overlay { position: fixed; inset: 0; background: rgba(11, 16, 32, 0.4); opacity: 0; pointer-events: none; transition: 0.2s; z-index: 40; }
+      .overlay.show { opacity: 1; pointer-events: auto; }
+      .drawer {
+        position: fixed; top: 0; right: 0; height: 100%; width: 520px; max-width: 92vw;
+        background: var(--panel); box-shadow: -10px 0 40px rgba(16, 21, 42, 0.2);
+        transform: translateX(100%); transition: 0.25s cubic-bezier(.2,.7,.2,1); z-index: 41;
+        display: flex; flex-direction: column;
+      }
+      .drawer.show { transform: translateX(0); }
+      .drawer .dhead { padding: 20px 22px; border-bottom: 1px solid var(--line); }
+      .drawer .dhead h2 { margin: 0 0 2px; font-size: 18px; }
+      .drawer .dbody { padding: 18px 22px; overflow-y: auto; }
+      .scores3 { display: flex; gap: 10px; margin: 4px 0 16px; }
+      .scorebox { flex: 1; background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 12px; text-align: center; }
+      .scorebox .v { font-size: 26px; font-weight: 800; }
+      .scorebox .l { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin-top: 2px; }
+      .section-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--muted); margin: 18px 0 8px; font-weight: 700; }
+      .kv { font-size: 13px; margin: 6px 0; }
+      .kv b { font-weight: 600; }
+      .finding { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
+      .finding .fhead { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
+      .finding .fname { font-weight: 600; font-size: 13px; }
+      .badge { font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 6px; }
+      .badge.strong, .badge.high { background: #e7f6ec; color: var(--green); }
+      .badge.moderate, .badge.medium { background: #fdf1dd; color: var(--amber); }
+      .badge.weak, .badge.low { background: #eef0f5; color: var(--muted); }
+      .badge.none { background: #f3f4f8; color: #aab; }
+      .quote { font-size: 12px; color: #444b66; margin-top: 6px; border-left: 3px solid var(--line); padding-left: 9px; font-style: italic; }
+      .quote a { color: var(--accent); text-decoration: none; }
+      .close { float: right; cursor: pointer; color: var(--muted); font-size: 20px; line-height: 1; }
+      .empty-note { color: var(--muted); font-size: 13px; padding: 20px 0; text-align: center; }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo">Z</div>
+        <div>
+          <h1>Zip Territory Research Agent</h1>
+          <p>Fit &amp; timing scoring for your book of accounts</p>
+        </div>
+      </div>
+      <div class="spacer"></div>
+      <div class="stat">
+        <span><b id="st-total">0</b> accounts</span>
+        <span><b id="st-scored">0</b> scored</span>
+        <span><b id="st-running">0</b> running</span>
+        <span><b id="st-queued">0</b> queued</span>
+      </div>
+    </header>
+
+    <main>
+      <div id="empty">
+        <div class="drop" id="drop">
+          <input type="file" id="file" accept=".csv" hidden />
+          <div class="logo" style="margin:0 auto;width:42px;height:42px;font-size:18px">⇪</div>
+          <h2>Drop your territory CSV here</h2>
+          <p>or click to choose a file — accounts load instantly, then score on demand</p>
+        </div>
+      </div>
+
+      <div id="loaded" style="display:none">
+        <div class="toolbar">
+          <input class="search" id="search" placeholder="Search name, country, industry…" />
+          <button class="btn" id="btn-upload">Replace CSV</button>
+          <button class="btn primary" id="btn-score-sel" disabled>Score selected</button>
+          <button class="btn" id="btn-score-all">Score all unscored</button>
+          <span class="pill-count" id="count"></span>
+        </div>
+
+        <div class="card">
+          <table>
+            <thead>
+              <tr>
+                <th class="no-sort center"><input type="checkbox" id="chk-all" /></th>
+                <th data-sort="name">Account</th>
+                <th data-sort="country">Country</th>
+                <th data-sort="industry">Industry</th>
+                <th data-sort="headcountNum" class="center">Headcount</th>
+                <th data-sort="growthNum" class="center">Growth</th>
+                <th data-sort="techStack">Tech stack</th>
+                <th data-sort="fit_score" class="center">Fit</th>
+                <th data-sort="timing_score" class="center">Timing</th>
+                <th data-sort="overall_score" class="center">Overall</th>
+                <th data-sort="status" class="center">Status</th>
+              </tr>
+            </thead>
+            <tbody id="rows"></tbody>
+          </table>
+          <div class="empty-note" id="no-rows" style="display:none">No matching accounts.</div>
+        </div>
+      </div>
+    </main>
+
+    <div class="overlay" id="overlay"></div>
+    <aside class="drawer" id="drawer">
+      <div class="dhead">
+        <span class="close" id="d-close">×</span>
+        <h2 id="d-name">—</h2>
+        <div class="sub" id="d-sub"></div>
+      </div>
+      <div class="dbody" id="d-body"></div>
+    </aside>
+
+    <script>
+      const state = { accounts: [], concurrency: 2, active: 0, queued: 0 };
+      const selected = new Set();
+      let sortKey = "name";
+      let sortDir = 1;
+      let filter = "";
+
+      const $ = (s) => document.querySelector(s);
+      const fmtNum = (v) => {
+        const n = parseInt(String(v).replace(/[^0-9-]/g, ""), 10);
+        return Number.isFinite(n) ? n : null;
+      };
+      const chipClass = (v) => (v == null ? "gray" : v >= 65 ? "green" : v >= 45 ? "amber" : "red");
+
+      function num(rec, key) {
+        if (key === "headcountNum") return fmtNum(rec.headcount) ?? -1;
+        if (key === "growthNum") return fmtNum(rec.growth) ?? -9999;
+        if (["fit_score", "timing_score", "overall_score"].includes(key))
+          return rec[key] == null ? -1 : rec[key];
+        return null;
+      }
+
+      async function refresh() {
+        const r = await fetch("/api/state");
+        const d = await r.json();
+        Object.assign(state, d);
+        render();
+      }
+
+      function visibleAccounts() {
+        let list = state.accounts.slice();
+        if (filter) {
+          const f = filter.toLowerCase();
+          list = list.filter((a) =>
+            [a.name, a.country, a.industry, a.techStack].join(" ").toLowerCase().includes(f)
+          );
+        }
+        list.sort((a, b) => {
+          let av, bv;
+          const numeric = num(a, sortKey);
+          if (numeric !== null) {
+            av = num(a, sortKey);
+            bv = num(b, sortKey);
+          } else {
+            av = String(a[sortKey] ?? "").toLowerCase();
+            bv = String(b[sortKey] ?? "").toLowerCase();
+          }
+          if (av < bv) return -1 * sortDir;
+          if (av > bv) return 1 * sortDir;
+          return 0;
+        });
+        return list;
+      }
+
+      function techPills(s) {
+        if (!s || s === "Not found") return '<span class="muted">—</span>';
+        const items = s.split(",").map((t) => t.trim()).filter(Boolean);
+        const shown = items.slice(0, 2).map((t) => `<span class="tag">${esc(t)}</span>`).join("");
+        const more = items.length > 2 ? `<span class="tag">+${items.length - 2}</span>` : "";
+        return `<div class="tech">${shown}${more}</div>`;
+      }
+
+      function growthCell(g) {
+        const n = fmtNum(g);
+        if (n == null) return '<span class="muted">—</span>';
+        const cls = n > 0 ? "pos" : n < 0 ? "neg" : "";
+        return `<span class="growth ${cls}">${n > 0 ? "+" : ""}${n}%</span>`;
+      }
+
+      function scoreCell(v) {
+        if (v == null) return '<span class="muted">—</span>';
+        return `<span class="chip ${chipClass(v)}">${v}</span>`;
+      }
+
+      function statusCell(rec) {
+        if (rec.status === "running") return '<span class="status running"><span class="spin"></span>scoring</span>';
+        if (rec.status === "queued") return '<span class="status queued"><span class="dot"></span>queued</span>';
+        if (rec.status === "error") return `<span class="status error" title="${esc(rec.error||"")}"><span class="dot"></span>error</span>`;
+        if (rec.status === "done") return '<span class="status done"><span class="dot"></span>done</span>';
+        return '<button class="btn rowbtn" data-score="' + esc(rec.id) + '">Score</button>';
+      }
+
+      const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+      function render() {
+        $("#st-total").textContent = state.accounts.length;
+        $("#st-scored").textContent = state.accounts.filter((a) => a.status === "done").length;
+        $("#st-running").textContent = state.active;
+        $("#st-queued").textContent = state.queued;
+
+        const hasData = state.accounts.length > 0;
+        $("#empty").style.display = hasData ? "none" : "block";
+        $("#loaded").style.display = hasData ? "block" : "none";
+        if (!hasData) return;
+
+        const list = visibleAccounts();
+        $("#count").textContent = `${list.length} shown · ${selected.size} selected · ${state.concurrency} in parallel`;
+        $("#no-rows").style.display = list.length ? "none" : "block";
+
+        $("#rows").innerHTML = list
+          .map(
+            (a) => `
+          <tr data-id="${esc(a.id)}" class="${selected.has(a.id) ? "sel" : ""}">
+            <td class="center" onclick="event.stopPropagation()">
+              <input type="checkbox" data-pick="${esc(a.id)}" ${selected.has(a.id) ? "checked" : ""} />
+            </td>
+            <td><div class="name">${esc(a.name)}</div><div class="sub">${esc(a.domain || "")}</div></td>
+            <td>${esc(a.country) || '<span class="muted">—</span>'}</td>
+            <td>${esc(a.industry) || '<span class="muted">—</span>'}</td>
+            <td class="center">${a.headcount ? esc(a.headcount) : '<span class="muted">—</span>'}</td>
+            <td class="center">${growthCell(a.growth)}</td>
+            <td>${techPills(a.techStack)}</td>
+            <td class="center">${scoreCell(a.fit_score)}</td>
+            <td class="center">${scoreCell(a.timing_score)}</td>
+            <td class="center">${scoreCell(a.overall_score)}</td>
+            <td class="center">${statusCell(a)}</td>
+          </tr>`
+          )
+          .join("");
+
+        document.querySelectorAll("#rows tr").forEach((tr) => {
+          tr.addEventListener("click", () => openDrawer(tr.dataset.id));
+        });
+        document.querySelectorAll("[data-pick]").forEach((cb) => {
+          cb.addEventListener("change", (e) => {
+            const id = e.target.dataset.pick;
+            if (e.target.checked) selected.add(id); else selected.delete(id);
+            $("#btn-score-sel").disabled = selected.size === 0;
+            render();
+          });
+        });
+        document.querySelectorAll("[data-score]").forEach((b) => {
+          b.addEventListener("click", (e) => { e.stopPropagation(); score([e.target.dataset.score]); });
+        });
+        $("#btn-score-sel").disabled = selected.size === 0;
+      }
+
+      async function score(ids) {
+        await fetch("/api/score", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ids })
+        });
+        refresh();
+      }
+
+      async function openDrawer(id) {
+        const r = await fetch("/api/account?id=" + encodeURIComponent(id));
+        const a = await r.json();
+        $("#d-name").textContent = a.name;
+        $("#d-sub").textContent = [a.industry, a.country, a.domain].filter(Boolean).join(" · ");
+        const body = $("#d-body");
+
+        if (a.status !== "done") {
+          body.innerHTML = `<div class="empty-note">${
+            a.status === "running" ? "Scoring in progress…" :
+            a.status === "queued" ? "Queued for scoring…" :
+            a.status === "error" ? "Error: " + esc(a.error || "") :
+            "Not scored yet. Use the Score button to research this account."
+          }</div>`;
+        } else {
+          const findRow = (f, isTrigger) => {
+            const grade = isTrigger ? f.strength : f.degree;
+            const time = isTrigger ? ` · ${esc(f.timeliness)}` : "";
+            const found = isTrigger ? f.found : f.present;
+            const ev = (f.evidence && f.evidence[0]) || null;
+            const id = isTrigger ? f.trigger_id : f.signal_id;
+            return `<div class="finding">
+              <div class="fhead">
+                <span class="fname">${esc(id)}</span>
+                <span class="badge ${grade}">${esc(grade)}${time}</span>
+              </div>
+              <div class="sub">${esc(f.summary || "")}</div>
+              ${ev ? `<div class="quote">“${esc(ev.quote)}”${ev.source_url ? ` — <a href="${esc(ev.source_url)}" target="_blank">source</a>` : ""}</div>` : ""}
+            </div>`;
+          };
+          body.innerHTML = `
+            <div class="scores3">
+              <div class="scorebox"><div class="v" style="color:${color(a.fit_score)}">${a.fit_score}</div><div class="l">Fit</div></div>
+              <div class="scorebox"><div class="v" style="color:${color(a.timing_score)}">${a.timing_score}</div><div class="l">Timing</div></div>
+              <div class="scorebox"><div class="v" style="color:${color(a.overall_score)}">${a.overall_score}</div><div class="l">Overall</div></div>
+            </div>
+            <div class="kv"><b>Confidence:</b> ${esc(a.confidence)} &nbsp;·&nbsp; <b>Cap:</b> ${esc(a.cap_applied || "none")}</div>
+            <div class="kv"><b>Persona:</b> ${esc(a.recommended_persona || "—")}</div>
+            <div class="section-title">Summary</div>
+            <div class="kv">${esc(a.summary || "")}</div>
+            <div class="section-title">Message angle</div>
+            <div class="kv">${esc(a.message_angle || "")}</div>
+            <div class="section-title">Triggers (timing)</div>
+            ${(a.triggers || []).map((t) => findRow(t, true)).join("") || '<div class="muted">—</div>'}
+            <div class="section-title">Signals (fit)</div>
+            ${(a.signals || []).map((s) => findRow(s, false)).join("") || '<div class="muted">—</div>'}
+          `;
+        }
+        $("#overlay").classList.add("show");
+        $("#drawer").classList.add("show");
+      }
+      const color = (v) => (v == null ? "#6b7186" : v >= 65 ? "#16a34a" : v >= 45 ? "#d98a00" : "#e0483c");
+
+      function closeDrawer() {
+        $("#overlay").classList.remove("show");
+        $("#drawer").classList.remove("show");
+      }
+
+      // CSV upload
+      function uploadFile(file) {
+        const reader = new FileReader();
+        reader.onload = async () => {
+          await fetch("/api/upload", { method: "POST", headers: { "Content-Type": "text/csv" }, body: reader.result });
+          selected.clear();
+          refresh();
+        };
+        reader.readAsText(file);
+      }
+
+      $("#drop").addEventListener("click", () => $("#file").click());
+      $("#file").addEventListener("change", (e) => e.target.files[0] && uploadFile(e.target.files[0]));
+      ["dragover", "dragleave", "drop"].forEach((ev) =>
+        $("#drop").addEventListener(ev, (e) => {
+          e.preventDefault();
+          $("#drop").classList.toggle("drag", ev === "dragover");
+          if (ev === "drop" && e.dataTransfer.files[0]) uploadFile(e.dataTransfer.files[0]);
+        })
+      );
+      $("#btn-upload").addEventListener("click", () => {
+        const inp = document.createElement("input");
+        inp.type = "file"; inp.accept = ".csv";
+        inp.onchange = (e) => e.target.files[0] && uploadFile(e.target.files[0]);
+        inp.click();
+      });
+
+      $("#search").addEventListener("input", (e) => { filter = e.target.value; render(); });
+      $("#btn-score-sel").addEventListener("click", () => { if (selected.size) score([...selected]); });
+      $("#btn-score-all").addEventListener("click", () => {
+        const ids = state.accounts.filter((a) => a.status === "idle" || a.status === "error").map((a) => a.id);
+        if (ids.length && confirm(`Score ${ids.length} accounts? This calls the research APIs for each.`)) score(ids);
+      });
+      $("#chk-all").addEventListener("change", (e) => {
+        const list = visibleAccounts();
+        if (e.target.checked) list.forEach((a) => selected.add(a.id));
+        else list.forEach((a) => selected.delete(a.id));
+        render();
+      });
+      document.querySelectorAll("th[data-sort]").forEach((th) => {
+        th.addEventListener("click", () => {
+          const k = th.dataset.sort;
+          if (sortKey === k) sortDir *= -1; else { sortKey = k; sortDir = 1; }
+          render();
+        });
+      });
+      $("#overlay").addEventListener("click", closeDrawer);
+      $("#d-close").addEventListener("click", closeDrawer);
+      document.addEventListener("keydown", (e) => e.key === "Escape" && closeDrawer());
+
+      refresh();
+      setInterval(refresh, 2500);
+    </script>
+  </body>
+</html>

@@ -69,3 +69,44 @@ export const persistToDbTool = new OpenAITool({
   },
   handler: (args) => persistToDb(args.account_data as Record<string, unknown>)
 });
+
+export interface StakeholderRow {
+  account_id: string;
+  account_uuid?: string | null;
+  company_name?: string | null;
+  company_domain?: string | null;
+  amplemarket_id: string;
+  full_name?: string | null;
+  title?: string | null;
+  linkedin_url?: string | null;
+  persona: string;
+  sub_persona?: string | null;
+  department: string;
+  rank: string;
+  decision_role?: string | null;
+  confidence?: number | null;
+  rationale?: string | null;
+  evidence?: unknown;
+  raw_input?: unknown;
+  model?: string | null;
+}
+
+export async function persistStakeholders(
+  rows: StakeholderRow[]
+): Promise<{ status: "persisted" | "error"; inserted?: number; message?: string }> {
+  if (rows.length === 0) return { status: "persisted", inserted: 0 };
+  try {
+    const db = getClient();
+    const { data, error } = await db
+      .from("account_stakeholders")
+      .upsert(rows, { onConflict: "account_id,amplemarket_id,persona" })
+      .select("id");
+    if (error) return { status: "error", message: error.message };
+    return { status: "persisted", inserted: data?.length ?? 0 };
+  } catch (error) {
+    return {
+      status: "error",
+      message: error instanceof Error ? error.message : String(error)
+    };
+  }
+}

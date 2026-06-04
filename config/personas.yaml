@@ -1,0 +1,285 @@
+# config/personas.yaml
+# Stakeholder personas for Zip-fit prospecting.
+# Used by the prospecting tool to filter Amplemarket People Search results
+# into Zip-relevant contacts across IT, Procurement, Finance, and Legal.
+#
+# Each persona has:
+#   department        — must be one of: IT, Operations, Finance, Legal
+#   ideal_titles      — strongest match; promote heavily
+#   adjacent_titles   — secondary match; include unless red-flagged
+#   title_red_flags   — hard penalize / skip
+#   description_signals.positive / .negative — bio / headline keyword signals
+#   title_aliases     — non-English title equivalents (DE / NL / FR / IT / ES / PT / PL / SV / NO / DA / FI)
+#                       covers Germany, Austria, Switzerland (DE/FR/IT), Netherlands,
+#                       Belgium (Dutch + French), France, Luxembourg, Italy, Iberia, Nordics, Poland.
+#   decision_role_hint — prose context (not consumed by tool)
+
+personas:
+  # ---------------------------------------------------------------------------
+  - key: IT_AND_SECURITY
+    department: IT
+    rank: high
+    one_liner: |
+      Owns IT strategy, infrastructure, or vendor/third-party security review.
+      Zip routes new-vendor intake and SaaS approvals through this group.
+    ideal_titles:
+      - CIO / Chief Information Officer
+      - IT Director / Director of IT / Director of Information Technology
+      - VP of IT / VP Information Technology
+      - Head of IT
+      - Head of Information Systems / Head of MIS
+      - CISO / Chief Information Security Officer
+      - VP / Director of Information Security
+      - VP / Director of IT Security
+      - Head of IT Risk / Head of Cyber Risk
+      - Third-Party Risk Manager / TPRM Lead
+      - Vendor Security Manager / Vendor Risk Analyst
+      - GRC Manager / GRC Lead
+    adjacent_titles:
+      - IT Manager (only if no clear security owner exists)
+      - Information Technology Manager
+      - CTO / Chief Technology Officer (when no CIO exists)
+      - Chief Technology Architect (at companies without a clear CIO)
+      - VP of Technology (when no separate CIO exists)
+      - IDAM / IAM Manager (relevant if they review SaaS access provisioning)
+      - Security Compliance Manager / Compliance & Audit (IT side)
+      - InfoSec Analyst (if scope mentions vendor reviews)
+    title_red_flags:
+      - Software Engineer / Senior Engineer / Lead Engineer
+      - Application Security Engineer / AppSec
+      - Penetration Tester / Red Team
+      - SOC Analyst / Detection Engineer
+      - Cloud Security Engineer (infra-side)
+      - Privacy Engineer
+      - Site Reliability Engineer / DevOps Engineer
+    description_signals:
+      positive:
+        - '"vendor risk" / "third-party risk" / "TPRM" / "supplier security"'
+        - '"security review of vendors" / "SaaS security review"'
+        - '"SOC 2 review" / "ISO 27001 audits of suppliers"'
+        - '"vendor due diligence" / "security questionnaires"'
+        - '"GRC program" / "risk register" / "risk committee"'
+        - '"DPIA" / "data processor assessments"'
+        - '"SaaS sprawl" / "shadow IT" / "SaaS governance"'
+        - '"OneTrust" / "Bitsight" / "Whistic" / "UpGuard" / "Conveyor"'
+      negative:
+        - '"writing exploits" / "offensive security"'
+        - '"incident response" / "threat hunting"'
+        - '"secure coding" / "SAST" / "DAST"'
+        - '"endpoint protection" / "EDR"'
+    title_aliases:
+      de: ["IT-Leiter", "Leiter IT", "IT-Direktor", "Leiter Informationssicherheit", "IT-Sicherheitsbeauftragter", "Chief Information Officer", "Leiter Informationstechnologie"]
+      nl: ["IT-Manager", "Hoofd IT", "IT-Directeur", "Hoofd Informatiebeveiliging", "Hoofd ICT", "Manager Informatiebeveiliging"]
+      fr: ["Directeur des Systèmes d'Information", "DSI", "Directeur Informatique", "Responsable Sécurité Informatique", "RSSI", "Responsable Informatique"]
+      it: ["Direttore IT", "Responsabile IT", "Responsabile Sicurezza Informatica", "Direttore Sistemi Informativi", "CISO"]
+      es: ["Director de Sistemas", "Director de TI", "Director de Tecnología", "Responsable de Seguridad Informática", "Director de Informática"]
+      pt: ["Diretor de TI", "Diretor de Sistemas de Informação", "Responsável de Segurança da Informação", "Diretor de Informática"]
+      pl: ["Dyrektor IT", "Kierownik IT", "Dyrektor ds. Bezpieczeństwa Informacji", "Dyrektor ds. Informatyki"]
+      sv: ["IT-chef", "IT-direktör", "Informationssäkerhetschef", "CIO"]
+      no: ["IT-direktør", "IT-sjef", "Sikkerhetssjef", "Direktør for informasjonssikkerhet"]
+      da: ["IT-direktør", "IT-chef", "Informationssikkerhedschef"]
+      fi: ["Tietohallintojohtaja", "IT-johtaja", "Tietoturvapäällikkö"]
+    decision_role_hint: |
+      CIO / CISO = budget_holder. Director/Head/VP = champion or budget_holder
+      depending on org size. TPRM/GRC manager = champion or end_user. Analyst = end_user.
+
+  # ---------------------------------------------------------------------------
+  - key: OPS_PROCUREMENT
+    department: Operations
+    rank: high
+    one_liner: |
+      Owns procurement, sourcing, contracts, or supplier management — the
+      primary economic buyer and product champion for Zip.
+    ideal_titles:
+      - Chief Procurement Officer / CPO
+      - VP / Director / Head of Procurement
+      - VP / Director / Head of Strategic Sourcing
+      - Director of Indirect Procurement
+      - Head of Supplier Management / Vendor Management
+      - Procurement Manager
+      - Category Manager (any spend category)
+      - Procurement Specialist
+      - Procurement Lead
+      - Senior Buyer / Strategic Buyer / Indirect Buyer
+      - Vendor Manager
+      - Procurement Operations Manager / P2P Manager / S2P Lead
+      - Contract Operations Manager / Contracts Manager (commercial)
+      - Third-Party Risk Lead (Ops side, if not housed in IT)
+    adjacent_titles:
+      - Sourcing Manager / Sourcing Analyst / Sourcing Specialist
+      - Vendor Onboarding Specialist
+      - Spend Analyst (procurement-side)
+      - Procurement Analyst
+      - Purchasing Manager
+      - Head of Business Operations (only if procurement reports in)
+      - Chief Operating Officer (only when no dedicated procurement leader)
+    title_red_flags:
+      - DevOps / Cloud Ops / SecOps / FinOps Engineer
+      - Customer Operations / Sales Operations / Revenue Operations
+      - Marketing Operations / Marketing Ops Manager
+      - Engineering Operations / Site Operations / Site Reliability
+      - Manufacturing Operations / Plant Operations / Supply Chain Ops (unless explicitly procurement)
+      - Operations Analyst (too generic — only include if description confirms procurement scope)
+      - Scrum Master / Project Manager / Program Manager (delivery, not procurement)
+    description_signals:
+      positive:
+        - '"source-to-pay" / "S2P" / "procure-to-pay" / "P2P"'
+        - '"intake" / "intake-to-procure" / "i2p" / "intake to pay"'
+        - '"vendor onboarding" / "supplier onboarding"'
+        - '"RFP" / "RFQ" / "sourcing events" / "negotiate contracts with suppliers"'
+        - '"category strategy" / "indirect spend" / "tail spend"'
+        - '"spend under management" / "savings program"'
+        - '"Coupa" / "Ariba" / "Ivalua" / "GEP" / "Zycus"'
+        - '"Airbase" / "Procurify" / "Ramp"'
+        - '"Tropic" / "Vendr" / "Zylo" / "Productiv"'
+        - '"Workday Procurement" / "SAP Ariba"'
+      negative:
+        - '"engineering velocity" / "release operations"'
+        - '"customer onboarding" / "user onboarding"'
+        - '"sales pipeline operations"'
+        - '"AWS / Azure cost optimization"'
+    title_aliases:
+      de: ["Einkäufer", "Einkäuferin", "Leiter Einkauf", "Leitung Einkauf", "Einkaufsleiter", "Strategischer Einkäufer", "Beschaffungsmanager", "Leiter Beschaffung", "Chief Procurement Officer"]
+      nl: ["Inkoper", "Inkoopmanager", "Hoofd Inkoop", "Inkoopdirecteur", "Inkoopadviseur", "Categoriemanager", "Strategisch Inkoper"]
+      fr: ["Acheteur", "Acheteuse", "Responsable Achats", "Directeur des Achats", "Directrice des Achats", "Acheteur Stratégique", "Chef de Service Achats", "Responsable Sourcing", "Responsable Approvisionnement"]
+      it: ["Responsabile Acquisti", "Direttore Acquisti", "Buyer", "Capo Ufficio Acquisti", "Responsabile degli Approvvigionamenti", "Responsabile Sourcing"]
+      es: ["Responsable de Compras", "Director de Compras", "Comprador", "Jefe de Compras", "Responsable de Aprovisionamiento", "Director de Aprovisionamiento"]
+      pt: ["Diretor de Compras", "Responsável de Compras", "Comprador", "Gestor de Aprovisionamento", "Diretor de Procurement"]
+      pl: ["Kierownik Działu Zakupów", "Dyrektor Zakupów", "Specjalista ds. Zakupów", "Kupiec", "Kategoria Manager"]
+      sv: ["Inköpschef", "Inköpsdirektör", "Strategisk Inköpare", "Kategoriansvarig", "Upphandlingschef"]
+      no: ["Innkjøpssjef", "Innkjøpsdirektør", "Strategisk Innkjøper", "Kategoriansvarlig"]
+      da: ["Indkøbschef", "Indkøbsdirektør", "Strategisk Indkøber", "Kategoriansvarlig"]
+      fi: ["Hankintajohtaja", "Hankintapäällikkö", "Ostopäällikkö", "Kategoriapäällikkö"]
+    decision_role_hint: |
+      CPO / VP Procurement = budget_holder and primary champion.
+      Procurement Ops / Category Manager = day-to-day champion and end_user.
+      COO = budget_holder only when procurement reports directly to them.
+
+  # ---------------------------------------------------------------------------
+  - key: FINANCE_SPEND_CONTROL
+    department: Finance
+    rank: high
+    one_liner: |
+      Owns spend approval, AP, controllership, accounting, or FP&A —
+      controls the money side of the procure-to-pay workflow Zip orchestrates.
+      Primary persona at sub-1K FTE where procurement often doesn't exist.
+    ideal_titles:
+      - CFO / Chief Financial Officer
+      - Chief Accounting Officer / CAO
+      - Finance Director / FD
+      - Group Financial Controller / Group Controller
+      - Controller / Corporate Controller / Financial Controller / Assistant Controller
+      - VP / Director of Finance
+      - VP / Director of FP&A
+      - Head of Finance / Head of FP&A
+      - Director of Accounting / Head of Accounting
+      - FP&A Manager / Senior FP&A Analyst (if budget-owning)
+      - Accounts Payable Manager / AP Manager / Head of AP / AP Lead
+      - Procure-to-Pay Manager (Finance side)
+      - Director of Accounting Operations
+    adjacent_titles:
+      - Finance Manager (with budget scope)
+      - Senior Accountant (only if owns AP / vendor payments)
+      - Spend Analyst (Finance side)
+      - Internal Audit Manager (if reviews procurement controls)
+      - Accounting Manager
+      - Management Accountant (only if description shows AP / vendor payment / approval workflow scope)
+    title_red_flags:
+      - FinOps Analyst / FinOps Manager
+      - Revenue Accountant / Revenue Operations
+      - Tax Manager / Group Tax Manager
+      - Treasury Analyst (cash, not spend approval)
+      - Investor Relations
+      - Audit/Statutory specialist with no operational scope
+    description_signals:
+      positive:
+        - '"AP automation" / "accounts payable transformation"'
+        - '"PO process" / "purchase order approval"'
+        - '"spend management" / "spend visibility" / "spend control"'
+        - '"month-end close" / "expense controls"'
+        - '"vendor invoice" / "three-way match"'
+        - '"budget owners" / "approver routing"'
+        - '"NetSuite" / "Workday Financials" / "SAP" / "Oracle Fusion"'
+        - '"Bill.com" / "Tipalti" / "Stampli" / "AvidXchange" / "SAP Concur"'
+        - '"IPO readiness" / "audit readiness"'
+      negative:
+        - '"FinOps" / "cloud cost" / "cloud financial management"'
+        - '"revenue recognition" / "ASC 606"'
+        - '"audit opinion" / "external audit"'
+        - '"transfer pricing" / "tax provision"'
+    title_aliases:
+      de: ["Finanzleiter", "Finanzdirektor", "Kaufmännischer Leiter", "Leiter Rechnungswesen", "Leiter Finanzen", "Hauptbuchhalter", "Buchhaltungsleiter", "Controller", "Leiter Kreditorenbuchhaltung"]
+      nl: ["Financieel Directeur", "CFO", "Hoofd Financiën", "Controller", "Hoofd Boekhouding", "Crediteurenadministrateur", "Financieel Manager"]
+      fr: ["Directeur Financier", "Directrice Financière", "DAF", "Contrôleur Financier", "Responsable Comptable", "Chef Comptable", "Responsable Administratif et Financier", "RAF", "Responsable Comptabilité Fournisseurs"]
+      it: ["Direttore Finanziario", "CFO", "Responsabile Amministrativo", "Capo Contabile", "Direttore Amministrativo", "Responsabile Contabilità Fornitori", "Controller"]
+      es: ["Director Financiero", "Directora Financiera", "Director de Finanzas", "Controller", "Responsable de Contabilidad", "Director Administrativo y Financiero", "Jefe de Contabilidad"]
+      pt: ["Diretor Financeiro", "CFO", "Controller", "Responsável Financeiro", "Diretor Administrativo e Financeiro", "Chefe de Contabilidade"]
+      pl: ["Dyrektor Finansowy", "CFO", "Główny Księgowy", "Kontroler Finansowy", "Kierownik Działu Finansów", "Kierownik ds. Rozliczeń"]
+      sv: ["Ekonomichef", "CFO", "Finansdirektör", "Redovisningschef", "Controller", "Reskontraansvarig"]
+      no: ["Finansdirektør", "Økonomisjef", "CFO", "Regnskapssjef", "Controller", "Leverandørreskontroansvarlig"]
+      da: ["Økonomidirektør", "CFO", "Finanschef", "Regnskabschef", "Controller", "Kreditorbogholder"]
+      fi: ["Talousjohtaja", "CFO", "Talouspäällikkö", "Pääkirjanpitäjä", "Controller", "Ostoreskontravastaava"]
+    decision_role_hint: |
+      CFO / CAO = ultimate budget_holder. Controller / FP&A Director = champion
+      (they feel broken approval workflows). AP Manager = high-intensity end_user.
+      Senior FP&A = influencer.
+
+  # ---------------------------------------------------------------------------
+  - key: LEGAL_CONTRACTS
+    department: Legal
+    rank: high
+    one_liner: |
+      Owns or runs commercial contract review — the bottleneck Zip's
+      contract workflows are designed to unblock.
+    ideal_titles:
+      - General Counsel / GC / Chief Legal Officer / CLO
+      - Deputy / Associate General Counsel (commercial)
+      - VP / Director / Head of Legal
+      - Director of Legal Operations / Head of Legal Ops / Manager Legal Operations
+      - Contracts Manager / Senior Contracts Manager / Global Contracts Manager
+      - Commercial Counsel / Commercial Legal Counsel
+      - Director of Contract Operations / Contracts Operations Lead
+    adjacent_titles:
+      - Legal Counsel (corporate / commercial)
+      - Senior Legal Counsel
+      - Paralegal — Commercial Contracts
+      - Data Protection Officer / DPO
+      - Privacy Counsel
+      - Vendor Counsel
+    title_red_flags:
+      - Litigation Counsel / Litigator
+      - IP Counsel / Patent Attorney / Trademark Counsel
+      - Employment Lawyer / Labour Counsel
+      - Regulatory Affairs (industry-specific compliance, not contract review)
+      - Real Estate Counsel
+      - Solicitor (generic — needs context to confirm commercial scope)
+    description_signals:
+      positive:
+        - '"MSA review" / "SOW review" / "vendor agreements"'
+        - '"contract lifecycle" / "CLM"'
+        - '"Ironclad" / "DocuSign CLM" / "LinkSquares" / "ContractPodAi" / "Agiloft"'
+        - '"redlines" / "negotiate vendor terms"'
+        - '"DPA" / "data processing agreement"'
+        - '"commercial contracts" / "supplier contracts"'
+        - '"intake from procurement" / "legal intake"'
+      negative:
+        - '"litigation" / "dispute resolution"'
+        - '"M&A" / "transactions" (unless specifies vendor scope)'
+        - '"employment matters"'
+        - '"patent prosecution"'
+    title_aliases:
+      de: ["Justiziar", "Leiter Recht", "Syndikusanwalt", "Vertragsmanager", "Leiter Rechtsabteilung", "Chefsyndikus", "Leiter Legal", "General Counsel"]
+      nl: ["Bedrijfsjurist", "Hoofd Juridische Zaken", "Juridisch Adviseur", "Contractmanager", "General Counsel", "Hoofd Legal"]
+      fr: ["Directeur Juridique", "Directrice Juridique", "Juriste", "Responsable Juridique", "Juriste Contrats", "Avocat d'Entreprise", "Conseil Juridique", "Juriste d'Entreprise"]
+      it: ["Direttore Legale", "Responsabile Legale", "Consulente Legale", "Contract Manager", "Direttore Affari Legali", "Responsabile Ufficio Legale"]
+      es: ["Director Jurídico", "Directora Jurídica", "Asesor Jurídico", "Responsable Legal", "Jurista de Contratos", "Director de Asuntos Legales"]
+      pt: ["Diretor Jurídico", "Responsável Jurídico", "Consultor Jurídico", "Gestor de Contratos", "Diretor de Assuntos Jurídicos"]
+      pl: ["Dyrektor Działu Prawnego", "Radca Prawny", "Główny Prawnik", "Specjalista ds. Kontraktów", "Kierownik Działu Prawnego"]
+      sv: ["Chefsjurist", "Bolagsjurist", "Juridisk Chef", "Avtalsansvarig", "Kontraktshandläggare"]
+      no: ["Sjefsjurist", "Juridisk Direktør", "Advokat", "Avtaleansvarlig", "Bedriftsadvokat"]
+      da: ["Chefjurist", "Juridisk Direktør", "Advokat", "Kontraktansvarlig", "Juridisk Chef"]
+      fi: ["Päälakimies", "Lakiasiainjohtaja", "Yhtiön Lakimies", "Sopimuspäällikkö", "Juridinen Johtaja"]
+    decision_role_hint: |
+      GC / CLO = budget_holder. Legal Ops Director = primary champion
+      (they own tooling). Commercial Counsel / Contracts Manager = end_user
+      and daily champion. DPO = influencer for vendor security reviews.

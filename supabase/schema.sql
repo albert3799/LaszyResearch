@@ -369,7 +369,66 @@ create index if not exists report_intelligence_account_idx
 create index if not exists report_intelligence_confidence_idx
   on public.report_intelligence (confidence desc);
 
--- 11. Pipeline and observability tables.
+-- 11. Account-level stakeholder mapping output.
+-- One row per (account, person, persona). A person can match multiple personas.
+create table if not exists public.account_stakeholders (
+  id                 uuid primary key default gen_random_uuid(),
+  account_uuid       uuid references public.accounts(id) on delete cascade,
+  account_id         text not null,
+  company_name       text,
+  company_domain     text,
+  amplemarket_id     text not null,
+  full_name          text,
+  title              text,
+  linkedin_url       text,
+  persona            text not null check (persona in (
+    'IT_AND_SECURITY',
+    'OPS_PROCUREMENT',
+    'FINANCE_SPEND_CONTROL',
+    'LEGAL_CONTRACTS'
+  )),
+  sub_persona        text,
+  department         text not null check (department in ('IT', 'Operations', 'Finance', 'Legal')),
+  rank               text not null check (rank in ('high', 'medium', 'low')),
+  decision_role      text check (decision_role in (
+    'champion', 'influencer', 'budget_holder', 'gatekeeper', 'end_user'
+  )),
+  confidence         numeric check (confidence >= 0 and confidence <= 1),
+  rationale          text,
+  evidence           jsonb not null default '[]'::jsonb,
+  raw_input          jsonb,
+  model              text,
+  fetched_at         timestamptz not null default now(),
+  created_at         timestamptz not null default now(),
+  updated_at         timestamptz not null default now(),
+  unique (account_id, amplemarket_id, persona)
+);
+
+create index if not exists account_stakeholders_account_idx
+  on public.account_stakeholders (account_uuid);
+
+create index if not exists account_stakeholders_account_id_idx
+  on public.account_stakeholders (account_id);
+
+create index if not exists account_stakeholders_persona_idx
+  on public.account_stakeholders (persona);
+
+create index if not exists account_stakeholders_rank_idx
+  on public.account_stakeholders (rank);
+
+-- Keep the persona CHECK aligned with config/personas.yaml. Re-run safely.
+alter table public.account_stakeholders
+  drop constraint if exists account_stakeholders_persona_check;
+
+alter table public.account_stakeholders
+  add constraint account_stakeholders_persona_check check (persona in (
+    'IT_AND_SECURITY',
+    'OPS_PROCUREMENT',
+    'FINANCE_SPEND_CONTROL',
+    'LEGAL_CONTRACTS'
+  ));
+
+-- 12. Pipeline and observability tables.
 create table if not exists public.pipeline_runs (
   id             uuid primary key default gen_random_uuid(),
   status         text not null default 'running',
@@ -442,6 +501,7 @@ begin
     'companies_house_filings_cache',
     'report_documents',
     'report_intelligence',
+    'account_stakeholders',
     'pipeline_runs',
     'agent_runs',
     'tool_runs'
@@ -473,6 +533,7 @@ begin
     'companies_house_filings_cache',
     'report_documents',
     'report_intelligence',
+    'account_stakeholders',
     'pipeline_runs',
     'agent_runs',
     'tool_runs'

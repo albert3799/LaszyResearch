@@ -8,6 +8,7 @@
     "dev": "tsx src/pipeline.ts",
     "agent:signal": "tsx src/scripts/runSignal.ts",
     "agent:scoring": "tsx src/scripts/runScoringAgent.ts",
+    "agent:stakeholders": "tsx src/scripts/runStakeholderMapper.ts",
     "web": "tsx src/server/local.ts",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run"
